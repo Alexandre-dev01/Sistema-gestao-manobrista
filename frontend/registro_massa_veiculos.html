@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Registro em Massa - Sistema de Manobrista</title>
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- MUDANÇA: Carregando de uma CDN diferente e em ordem -->
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.js"></script>
+  </head>
+  <body>
+    <!-- O HEADER E FOOTER SERÃO INJETADOS PELO JS -->
+    <main>
+      <h2>Registro em Massa de Veículos</h2>
+      <div
+        id="activeEventDisplay"
+        class="event-info-display"
+        style="display: none"
+      >
+        <p><strong>Evento Ativo:</strong> <span id="activeEventName"></span></p>
+        <p><strong>Local:</strong> <span id="activeEventLocation"></span></p>
+        <p><strong>Data:</strong> <span id="activeEventDate"></span></p>
+      </div>
+      <div class="generate-table-section">
+        <label for="ticketCount">Número de Tickets para Gerar:</label>
+        <input type="number" id="ticketCount" value="30" min="1" max="200" />
+        <button id="generateTableBtn" class="btn-primary">Gerar Tabela</button>
+        <button id="generatePdfBtn" class="btn-secondary">
+          Gerar PDF (Mapa )
+        </button>
+      </div>
+      <div class="search-section">
+        <label for="searchInput">Buscar por Ticket, Placa ou Modelo:</label>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Digite para buscar..."
+        />
+      </div>
+      <form id="massRegisterForm">
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Prisma</th>
+                <th>Ticket</th>
+                <th>Modelo</th>
+                <th>Cor</th>
+                <th>Placa</th>
+                <th>Localização</th>
+              </tr>
+            </thead>
+            <tbody id="vehiclesTableBody"></tbody>
+          </table>
+        </div>
+        <button type="submit" class="btn-primary">
+          Registrar Veículos Preenchidos
+        </button>
+        <p id="message" class="message"></p>
+      </form>
+      <a href="dashboard.html" class="back-button">Voltar para Dashboard</a>
+    </main>
+    <!-- Scripts do seu projeto no final do body -->
+    <script src="components.js"></script>
+    <!-- Carrega as funções de injeção -->
+    <script src="global.js"></script>
+    <!-- Executa a injeção -->
+    <script src="registro_massa_veiculos.js"></script>
+    <!-- Executa a lógica da página -->
+  </body>
+</html>

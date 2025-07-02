@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cadastro de Usuário - Sistema de Manobrista</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      /* Estilos específicos para esta página */
+      body {
+        background-color: #1a1a2e;
+        color: #e0e0e0;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 500px;
+        margin: 50px auto;
+        background-color: #0f3460;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        flex-grow: 1; /* Permite que o container ocupe o espaço restante */
+      }
+      h1 {
+        text-align: center;
+        color: #e0e0e0;
+        margin-bottom: 30px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      .form-group input[type="text"],
+      .form-group input[type="password"],
+      .form-group select {
+        width: calc(100% - 22px); /* Ajusta para padding e borda */
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        background-color: #2c3e50;
+        color: #e0e0e0;
+        font-size: 1em;
+      }
+      .form-group input[type="text"]:focus,
+      .form-group input[type="password"]:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: #007bff;
+      }
+      .password-requirements {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #2c3e50;
+        border-radius: 5px;
+      }
+      .password-requirements p {
+        margin: 5px 0;
+        font-size: 0.9em;
+        color: #b0b0b0;
+      }
+      .password-requirements .valid {
+        color: #4caf50; /* Verde para válido */
+      }
+      .password-requirements .invalid {
+        color: #ff5722; /* Laranja para inválido */
+      }
+      .message {
+        text-align: center;
+        margin-top: 20px;
+        padding: 10px;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+      .message.success {
+        background-color: #4caf50;
+        color: white;
+      }
+      .message.error {
+        background-color: #ff5722;
+        color: white;
+      }
+      .btn-submit {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1.1em;
+        width: 100%;
+        transition: background-color 0.3s ease;
+      }
+      .btn-submit:hover {
+        background-color: #0056b3;
+      }
+      .btn-submit:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+      .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        color: #e0e0e0;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      /* Estilos do Header/Footer (já devem estar no style.css) */
+      header {
+        background-color: #0f3460;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        color: #e0e0e0;
+      }
+      .header-left {
+        display: flex;
+        align-items: center;
+      }
+      .header-logo {
+        height: 40px;
+        margin-right: 15px;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 1.5em;
+        color: #e0e0e0;
+      }
+      footer {
+        background-color: #0f3460;
+        color: #b0b0b0;
+        text-align: center;
+        padding: 10px;
+        font-size: 0.8em;
+        margin-top: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Cadastrar Novo Usuário</h1>
+      <div id="message" class="message" style="display: none"></div>
+
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="nome_usuario">Nome de Usuário:</label>
+          <input type="text" id="nome_usuario" required />
+        </div>
+
+        <div class="form-group">
+          <label for="senha">Senha:</label>
+          <input type="password" id="senha" required />
+          <div class="password-requirements">
+            <p id="reqLength" class="invalid">Mínimo de 6 caracteres</p>
+            <p id="reqUppercase" class="invalid">
+              Pelo menos 1 letra maiúscula
+            </p>
+            <p id="reqLowercase" class="invalid">
+              Pelo menos 1 letra minúscula
+            </p>
+            <p id="reqNumber" class="invalid">Pelo menos 1 número</p>
+            <p id="reqSpecial" class="invalid">
+              Pelo menos 1 caractere especial (!@#$%^&*)
+            </p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm_senha">Confirmar Senha:</label>
+          <input type="password" id="confirm_senha" required />
+          <p id="matchMessage" class="invalid" style="display: none">
+            Senhas não coincidem
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="cargo">Cargo:</label>
+          <select id="cargo" required>
+            <option value="">Selecione o Cargo</option>
+            <option value="orientador">Orientador</option>
+            <option value="manobrista">Manobrista</option>
+            <!-- Adicione outros cargos se necessário, ex: <option value="admin">Administrador</option> -->
+          </select>
+        </div>
+
+        <button type="submit" class="btn-submit" id="registerButton" disabled>
+          Cadastrar
+        </button>
+      </form>
+
+      <a href="dashboard.html" class="back-link">Voltar para Dashboard</a>
+    </div>
+    <script type="module" src="components.js"></script>
+    <script type="module" src="global.js"></script>
+    <script src="cadastro_usuario.js"></script>
+  </body>
+</html>

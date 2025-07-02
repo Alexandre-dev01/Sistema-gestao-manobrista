@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Sistema de Manobrista</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <!-- Seção para exibir o evento ativo -->
+      <div id="activeEventDisplay" style="display: none">
+        <h2>Evento Ativo:</h2>
+        <p>Nome: <span id="activeEventName"></span></p>
+        <p>Local: <span id="activeEventLocation"></span></p>
+        <p>Data: <span id="activeEventDate"></span></p>
+      </div>
+      <button id="selectActiveEventButton" class="btn-primary">
+        Selecionar Evento Ativo
+      </button>
+
+      <div class="card-container">
+        <div class="card" id="cardEventos">
+          <h2>Gerenciar Eventos</h2>
+          <p>Crie e selecione eventos.</p>
+        </div>
+        <div class="card" id="cardRegistrarEntrada">
+          <h2>Registrar Entrada</h2>
+          <p>Adicione novos veículos.</p>
+        </div>
+        <div class="card" id="cardConsultaVeiculos">
+          <h2>Consultar Veículos</h2>
+          <p>Busque e localize carros.</p>
+        </div>
+        <div class="card" id="cardRegistroMassa">
+          <h2>Registro em Massa</h2>
+          <p>Registre múltiplos veículos de uma vez.</p>
+        </div>
+        <!-- Card de Cadastrar Usuário - Será exibido condicionalmente pelo JS -->
+        <div class="card" id="cardCadastrarUsuario" style="display: none">
+          <h2>Cadastrar Usuário</h2>
+          <p>Adicione novos usuários ao sistema.</p>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="global.js"></script>
+    <script src="dashboard.js"></script>
+  </body>
+</html>

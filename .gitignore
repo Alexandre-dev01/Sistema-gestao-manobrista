@@ -1,0 +1,13 @@
+ 
+# Arquivo de configuração do VS Code
+.vscode/
+
+# Dependências do Node.js (pasta gigante e desnecessária)
+/backend/node_modules/
+
+# Arquivos de ambiente com senhas e segredos
+/backend/.env
+
+# Logs e arquivos temporários
+*.log
+npm-debug.log*

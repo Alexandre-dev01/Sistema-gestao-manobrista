@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Consultar Veículos - Sistema de Manobrista</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      /* Seus estilos CSS específicos para esta página */
+      body {
+        background-color: #1a1a2e;
+        color: #e0e0e0;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: #0f3460;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      h1 {
+        text-align: center;
+        color: #e0e0e0;
+        margin-bottom: 30px;
+      }
+      .search-filter-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap; /* Permite que os itens quebrem a linha em telas menores */
+      }
+      .search-filter-group input[type="text"] {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        background-color: #2c3e50;
+        color: #e0e0e0;
+        font-size: 1em;
+      }
+      .search-filter-group select {
+        padding: 10px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        background-color: #2c3e50;
+        color: #e0e0e0;
+        font-size: 1em;
+      }
+      .vehicle-list {
+        margin-top: 20px;
+      }
+      .vehicle-item {
+        background-color: #2c3e50;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .vehicle-item h3 {
+        margin: 0;
+        color: #e0e0e0;
+      }
+      .vehicle-item p {
+        margin: 0;
+        font-size: 0.9em;
+        color: #b0b0b0;
+      }
+      .vehicle-item .status {
+        font-weight: bold;
+        /* Cor para status - ajuste conforme sua paleta */
+      }
+      .vehicle-item .status.estacionado {
+        color: #007bff;
+      }
+      .vehicle-item .status.saiu {
+        color: #4caf50;
+      }
+      .vehicle-item .action-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: background-color 0.3s ease;
+      }
+      .vehicle-item .action-button:hover {
+        background-color: #0056b3;
+      }
+      .vehicle-item .action-button.saida {
+        background-color: #ff5722;
+      }
+      .vehicle-item .action-button.saida:hover {
+        background-color: #e64a19;
+      }
+      .no-vehicles-message {
+        text-align: center;
+        margin-top: 20px;
+        color: #b0b0b0;
+      }
+      .back-button {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        color: #e0e0e0;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .event-info-display {
+        background-color: #2c3e50;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .event-info-display p {
+        margin: 5px 0;
+      }
+      /* Estilo para o botão de PDF fora do grupo de busca/filtro */
+      .pdf-button-container {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .pdf-button-container .btn-primary {
+        width: auto; /* Para não ocupar 100% da largura */
+        padding: 10px 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Consultar Veículos</h1>
+
+      <div id="eventInfoDisplay" class="event-info-display">
+        <p>Evento Ativo: <span id="activeEventName">Nenhum</span></p>
+        <p>Local: <span id="activeEventLocation">Nenhum</span></p>
+        <p>Data: <span id="activeEventDate">Nenhum</span></p>
+      </div>
+
+      <!-- Botão de PDF movido para fora do search-filter-group para melhor layout -->
+      <div class="pdf-button-container">
+        <button id="generatePdfBtn" class="btn-primary">
+          Gerar PDF da Lista
+        </button>
+      </div>
+
+      <div class="search-filter-group">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Buscar por Ticket ou Placa"
+        />
+        <select id="statusFilter">
+          <option value="">Todos os Status</option>
+          <option value="estacionado">Estacionado</option>
+          <option value="aguardando_saida">Aguardando Saída</option>
+          <option value="saiu">Saído</option>
+        </select>
+      </div>
+
+      <div id="vehicleList" class="vehicle-list">
+        <p
+          id="noVehiclesMessage"
+          class="no-vehicles-message"
+          style="display: none"
+        >
+          Nenhum veículo encontrado para este evento.
+        </p>
+        <!-- Veículos serão carregados aqui pelo JavaScript -->
+      </div>
+
+      <a href="dashboard.html" class="back-button">Voltar para Dashboard</a>
+    </div>
+
+    <!-- Scripts das bibliotecas jsPDF e jspdf-autotable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <!-- Opcional: para converter HTML em PDF com mais precisão (não usado diretamente aqui, mas pode ser útil ) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script type="module" src="components.js"></script>
+    <script type="module" src="global.js"></script>
+    <script src="consulta_veiculos.js"></script>
+  </body>
+</html>
