@@ -1,16 +1,14 @@
-// backend/routes/veiculosRoutes.js (VERSÃO FINAL E COMPLETA)
-
 const express = require("express");
 const pool = require("../config/db");
 const router = express.Router();
 const { auth, authorize } = require("../middleware/authMiddleware");
 
 // Rota para Registrar a Entrada de um Veículo
-// Permissão: admin e orientador
+// --- CORREÇÃO AQUI: Adicionado 'manobrista' ---
 router.post(
   "/entrada",
   auth,
-  authorize("admin", "orientador"),
+  authorize("admin", "orientador", "manobrista"), // Manobrista agora pode registrar entrada
   async (req, res) => {
     const { evento_id, numero_ticket, modelo, cor, placa, localizacao } =
       req.body;
@@ -54,12 +52,10 @@ router.post(
           usuario_entrada_id,
         ]
       );
-      res
-        .status(201)
-        .json({
-          message: "Veículo registrado com sucesso!",
-          veiculoId: result.insertId,
-        });
+      res.status(201).json({
+        message: "Veículo registrado com sucesso!",
+        veiculoId: result.insertId,
+      });
     } catch (error) {
       console.error("Erro ao registrar entrada de veículo:", error);
       res.status(500).json({ message: "Erro interno do servidor." });
@@ -68,7 +64,7 @@ router.post(
 );
 
 // Rota para Registrar a Saída de um Veículo
-// Permissão: admin, orientador e manobrista
+// Permissão: admin, orientador e manobrista (já estava correto)
 router.put(
   "/saida/:id",
   auth,
@@ -107,7 +103,7 @@ router.put(
 );
 
 // Rota para Listar Veículos de um Evento Específico
-// Permissão: admin, orientador e manobrista
+// Permissão: admin, orientador e manobrista (já estava correto)
 router.get(
   "/evento/:idEvento",
   auth,
