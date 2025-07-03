@@ -1,198 +1,181 @@
-// frontend/eventos.js
+// frontend/eventos.js (VERSÃO FINAL)
 document.addEventListener("DOMContentLoaded", async () => {
   const createEventForm = document.getElementById("createEventForm");
   const nomeEventoInput = document.getElementById("nomeEvento");
   const dataEventoInput = document.getElementById("dataEvento");
   const localEventoInput = document.getElementById("localEvento");
   const descricaoEventoInput = document.getElementById("descricaoEvento");
-  const createMessageDisplay = document.getElementById("createMessage");
   const eventsContainer = document.getElementById("eventsContainer");
   const noEventsMessage = document.getElementById("noEventsMessage");
 
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // Redireciona se não estiver logado
   if (!token || !user) {
-    alert("Você precisa estar logado para acessar esta página.");
     window.location.href = "login.html";
     return;
   }
 
-  // Função para exibir mensagens (reutilizável)
-  function showMessage(msg, type) {
-    createMessageDisplay.textContent = msg;
-    createMessageDisplay.classList.remove("success-message", "error-message");
-    createMessageDisplay.classList.add(type + "-message");
-    createMessageDisplay.style.display = "block";
-    setTimeout(() => {
-      createMessageDisplay.style.display = "none";
-    }, 3000); // Esconde a mensagem após 3 segundos
-  }
-
-  // Função para carregar e exibir os eventos
   async function loadEvents() {
     try {
       const response = await fetch("http://localhost:3000/api/eventos", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await response.json();
 
       if (response.ok) {
-        eventsContainer.innerHTML = ""; // Limpa a lista existente
-        if (data.length === 0) {
-          noEventsMessage.style.display = "block";
-        } else {
-          noEventsMessage.style.display = "none";
-          const activeEventId = localStorage.getItem("activeEventId"); // Pega o ID do evento ativo
+        eventsContainer.innerHTML = "";
+        noEventsMessage.style.display = data.length === 0 ? "block" : "none";
+        const activeEventId = localStorage.getItem("activeEventId");
 
-          data.forEach((event) => {
-            const eventItem = document.createElement("div");
-            eventItem.classList.add("event-item");
-            eventItem.innerHTML = `
-                <h3>${event.nome_evento} ${
-              event.id == activeEventId
-                ? '<span class="active-event-indicator">(ATIVO)</span>'
-                : ""
-            }</h3>
-                <p>Data: ${new Date(event.data_evento).toLocaleDateString(
-                  "pt-BR"
-                )}</p>
-                <p>Local: ${event.local_evento}</p>
-                <p>Descrição: ${event.descricao || "N/A"}</p>
-                <div class="actions">
-                    <button class="set-active-btn"
-                        data-event-id="${event.id}"
-                        data-event-name="${event.nome_evento}"
-                        data-local-evento="${event.local_evento}"
-                        data-event-date="${event.data_evento}">
-                        ${
-                          event.id == activeEventId
-                            ? "Evento Ativo"
-                            : "Definir como Ativo"
-                        }
-                    </button>
-                    <button class="delete-event" data-event-id="${
-                      event.id
-                    }">Excluir</button>
-                </div>
-            `;
-            eventsContainer.appendChild(eventItem);
-          });
-
-          // Adiciona listeners aos botões "Definir como Ativo"
-          document.querySelectorAll(".set-active-btn").forEach((button) => {
-            button.addEventListener("click", (e) => {
-              const eventId = e.target.dataset.eventId;
-              const eventName = e.target.dataset.eventName;
-              const eventLocation = e.target.dataset.localEvento; // CORRIGIDO AQUI: dataset.localEvento
-              const eventDate = e.target.dataset.eventDate;
-
-              localStorage.setItem("activeEventId", eventId);
-              localStorage.setItem(
-                "activeEventDetails",
-                JSON.stringify({
-                  id: eventId,
-                  nome_evento: eventName,
-                  local_evento: eventLocation, // Agora vai salvar o local correto
-                  data_evento: eventDate,
-                })
-              );
-              showMessage(
-                `Evento "${eventName}" definido como ativo!`,
-                "success"
-              );
-              loadEvents(); // Recarrega a lista para atualizar o indicador (ATIVO)
-            });
-          });
-
-          // Adiciona listeners aos botões "Excluir"
-          document.querySelectorAll(".delete-event").forEach((button) => {
-            button.addEventListener("click", async (e) => {
-              const eventId = e.target.dataset.eventId;
-              console.log(
-                `[FRONTEND] Botão Excluir clicado para o evento ID: ${eventId}`
-              ); // Log 1
-
-              if (
-                confirm(
-                  "Tem certeza que deseja excluir este evento? Esta ação é irreversível e excluirá também todos os veículos associados a ele!"
-                )
-              ) {
-                console.log(
-                  `[FRONTEND] Confirmação de exclusão para o evento ID: ${eventId}. Enviando requisição DELETE...`
-                ); // Log 2
-                try {
-                  const response = await fetch(
-                    `http://localhost:3000/api/eventos/${eventId}`,
-                    {
-                      method: "DELETE",
-                      headers: {
-                        Authorization: `Bearer ${token}`,
-                      },
-                    }
-                  );
-
-                  console.log(
-                    `[FRONTEND] Resposta recebida do backend para exclusão do evento ID: ${eventId}. Status: ${response.status}`
-                  ); // Log 3
-                  const data = await response.json();
-                  console.log(`[FRONTEND] Dados da resposta do backend:`, data); // Log 4
-
-                  if (response.ok) {
-                    showMessage(data.message, "success");
-                    // Se o evento excluído era o ativo, limpa o localStorage
-                    if (localStorage.getItem("activeEventId") == eventId) {
-                      localStorage.removeItem("activeEventId");
-                      localStorage.removeItem("activeEventDetails");
-                    }
-                    loadEvents(); // Recarrega a lista
-                  } else {
-                    showMessage(
-                      data.message || "Erro ao excluir evento.",
-                      "error"
-                    );
-                  }
-                } catch (error) {
-                  console.error(
-                    "[FRONTEND] Erro de rede ao excluir evento:",
-                    error
-                  ); // Log 5
-                  showMessage("Erro de conexão ao excluir evento.", "error");
-                }
-              } else {
-                console.log(
-                  `[FRONTEND] Exclusão do evento ID: ${eventId} cancelada pelo usuário.`
-                ); // Log 6
-              }
-            });
-          });
-        }
+        data.forEach((event) => {
+          const eventItem = document.createElement("div");
+          eventItem.classList.add("event-item");
+          const isActive = event.id == activeEventId;
+          eventItem.innerHTML = `
+              <h3>${event.nome_evento} ${
+            isActive
+              ? '<span class="active-event-indicator">(ATIVO)</span>'
+              : ""
+          }</h3>
+              <p>Data: ${new Date(event.data_evento).toLocaleDateString(
+                "pt-BR"
+              )}</p>
+              <p>Local: ${event.local_evento}</p>
+              <p>Descrição: ${event.descricao || "N/A"}</p>
+              <div class="actions">
+                  <button class="set-active-btn" data-event-id="${
+                    event.id
+                  }" data-event-details='${JSON.stringify(event)}' ${
+            isActive ? "disabled" : ""
+          }>
+                      ${isActive ? "Evento Ativo" : "Definir como Ativo"}
+                  </button>
+                  <button class="delete-event" data-event-id="${
+                    event.id
+                  }">Excluir</button>
+                  <button class="report-btn" data-event-id="${
+                    event.id
+                  }">Gerar Relatório</button>
+              </div>`;
+          eventsContainer.appendChild(eventItem);
+        });
+        addEventListeners();
       } else {
-        showMessage(data.message || "Erro ao carregar eventos.", "error");
+        Swal.fire(
+          "Erro!",
+          data.message || "Erro ao carregar eventos.",
+          "error"
+        );
       }
     } catch (error) {
-      console.error("Erro de rede ao carregar eventos:", error);
-      showMessage("Erro de conexão ao carregar eventos.", "error");
+      Swal.fire(
+        "Erro de Conexão",
+        "Não foi possível conectar ao servidor.",
+        "error"
+      );
     }
   }
 
-  // Adiciona listener ao formulário de criação de evento
+  function addEventListeners() {
+    document.querySelectorAll(".set-active-btn").forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const eventDetails = JSON.parse(e.target.dataset.eventDetails);
+        localStorage.setItem("activeEventId", eventDetails.id);
+        localStorage.setItem(
+          "activeEventDetails",
+          JSON.stringify(eventDetails)
+        );
+        Swal.fire({
+          icon: "success",
+          title: "Evento Ativado!",
+          text: `O evento "${eventDetails.nome_evento}" agora está ativo.`,
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+        loadEvents();
+      });
+    });
+
+    document.querySelectorAll(".delete-event").forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const eventId = e.target.dataset.eventId;
+        Swal.fire({
+          title: "Tem certeza?",
+          text: "Esta ação é irreversível e excluirá o evento e todos os veículos associados!",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#d33",
+          cancelButtonColor: "#3085d6",
+          confirmButtonText: "Sim, excluir!",
+          cancelButtonText: "Cancelar",
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              const response = await fetch(
+                `http://localhost:3000/api/eventos/${eventId}`,
+                {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              const data = await response.json();
+              if (response.ok) {
+                Swal.fire("Excluído!", data.message, "success");
+                if (localStorage.getItem("activeEventId") == eventId) {
+                  localStorage.removeItem("activeEventId");
+                  localStorage.removeItem("activeEventDetails");
+                }
+                loadEvents();
+              } else {
+                Swal.fire(
+                  "Erro!",
+                  data.message || "Erro ao excluir evento.",
+                  "error"
+                );
+              }
+            } catch (error) {
+              Swal.fire(
+                "Erro de Conexão",
+                "Não foi possível conectar ao servidor.",
+                "error"
+              );
+            }
+          }
+        });
+      });
+    });
+
+    document.querySelectorAll(".report-btn").forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const eventId = e.target.dataset.eventId;
+        Swal.fire({
+          title: "Gerar Relatório?",
+          text: "Isso irá criar um PDF com o resumo completo do evento.",
+          icon: "info",
+          showCancelButton: true,
+          confirmButtonText: "Sim, gerar!",
+          cancelButtonText: "Cancelar",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            generateReport(eventId);
+          }
+        });
+      });
+    });
+  }
+
   createEventForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    // Limpa mensagens anteriores
-    createMessageDisplay.textContent = "";
-    createMessageDisplay.classList.remove("success-message", "error-message");
-
-    const nome_evento = nomeEventoInput.value;
-    const data_evento = dataEventoInput.value;
-    const local_evento = localEventoInput.value;
-    const descricao = descricaoEventoInput.value;
-
+    const body = {
+      nome_evento: nomeEventoInput.value,
+      data_evento: dataEventoInput.value,
+      local_evento: localEventoInput.value,
+      descricao: descricaoEventoInput.value,
+    };
     try {
       const response = await fetch("http://localhost:3000/api/eventos", {
         method: "POST",
@@ -200,29 +183,88 @@ document.addEventListener("DOMContentLoaded", async () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          nome_evento,
-          data_evento,
-          local_evento,
-          descricao,
-        }),
+        body: JSON.stringify(body),
       });
-
       const data = await response.json();
-
       if (response.ok) {
-        showMessage(data.message, "success");
-        createEventForm.reset(); // Limpa o formulário
-        loadEvents(); // Recarrega a lista de eventos
+        Swal.fire("Sucesso!", data.message, "success");
+        createEventForm.reset();
+        loadEvents();
       } else {
-        showMessage(data.message || "Erro ao criar evento.", "error");
+        Swal.fire("Erro!", data.message || "Erro ao criar evento.", "error");
       }
     } catch (error) {
-      console.error("Erro de rede ao criar evento:", error);
-      showMessage("Erro de conexão ao criar evento.", "error");
+      Swal.fire(
+        "Erro de Conexão",
+        "Não foi possível conectar ao servidor.",
+        "error"
+      );
     }
   });
 
-  // Carrega os eventos ao iniciar a página
+  async function generateReport(eventId) {
+    Swal.fire({
+      title: "Gerando Relatório...",
+      text: "Aguarde...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/eventos/${eventId}/relatorio`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!response.ok)
+        throw new Error(
+          (await response.json()).message || "Falha ao buscar dados."
+        );
+
+      const { evento, veiculos, estatisticas } = await response.json();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(20);
+      doc.text("Relatório Final de Evento", 105, 20, { align: "center" });
+      doc.setFontSize(12);
+      doc.text(`Evento: ${evento.nome_evento}`, 14, 40);
+      // ... (Restante da sua lógica de criação de PDF) ...
+      const tableHeaders = [
+        ["Ticket", "Placa", "Entrada", "Saída", "Permanência"],
+      ];
+      const tableBody = veiculos.map((v) => {
+        const entrada = new Date(v.hora_entrada);
+        const saida = v.hora_saida ? new Date(v.hora_saida) : null;
+        let permanencia = "N/A";
+        if (saida) {
+          const diffMs = saida - entrada;
+          const diffHrs = Math.floor(diffMs / 3600000);
+          const diffMins = Math.round((diffMs % 3600000) / 60000);
+          permanencia = `${diffHrs}h ${diffMins}min`;
+        }
+        return [
+          v.numero_ticket,
+          v.placa,
+          entrada.toLocaleTimeString("pt-BR"),
+          saida ? saida.toLocaleTimeString("pt-BR") : "Estacionado",
+          permanencia,
+        ];
+      });
+      doc.autoTable({
+        head: tableHeaders,
+        body: tableBody,
+        startY: 95,
+        theme: "grid",
+      });
+      doc.save(`Relatorio_${evento.nome_evento.replace(/\s+/g, "_")}.pdf`);
+      Swal.close();
+    } catch (error) {
+      Swal.fire(
+        "Erro!",
+        error.message || "Não foi possível gerar o relatório.",
+        "error"
+      );
+    }
+  }
+
   loadEvents();
 });

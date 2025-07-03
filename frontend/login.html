@@ -5,84 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - Sistema de Manobrista</title>
     <link rel="stylesheet" href="style.css" />
-    <style>
-      /* Estilos específicos para a tela de login, ou adicione ao style.css */
-      body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background-color: #1a1a2e; /* Fundo escuro conforme sua ideia */
-        color: #e0e0e0;
-        margin: 0;
-      }
-      .login-container {
-        background-color: #0f3460; /* Cor de destaque para o container */
-        padding: 40px;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        text-align: center;
-        width: 90%;
-        max-width: 400px;
-      }
-      .login-container h1 {
-        color: #e0e0e0;
-        margin-bottom: 30px;
-      }
-      .input-group {
-        margin-bottom: 20px;
-        text-align: left;
-      }
-      .input-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: bold;
-      }
-      .input-group input {
-        width: calc(100% - 20px); /* Ajuste para padding */
-        padding: 10px;
-        border: 1px solid #333;
-        border-radius: 5px;
-        background-color: #2c3e50; /* Fundo do input mais escuro */
-        color: #e0e0e0;
-        font-size: 1em;
-      }
-      .input-group input:focus {
-        outline: none;
-        border-color: #ff5722; /* Borda de destaque ao focar */
-      }
-      .login-button {
-        width: 100%;
-        padding: 15px;
-        background-color: #ff5722; /* Laranja vibrante para o botão */
-        color: white;
-        border: none;
-        border-radius: 5px;
-        font-size: 1.1em;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-      .login-button:hover {
-        background-color: #e64a19; /* Laranja mais escuro no hover */
-      }
-      .error-message {
-        color: #f44336; /* Vermelho para mensagens de erro */
-        margin-top: 15px;
-        font-weight: bold;
-      }
-      .logo {
-        margin-bottom: 20px;
-      }
-      .logo img {
-        max-width: 150px; /* Ajuste o tamanho do logo conforme necessário */
-        height: auto;
-      }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </head>
-  <body>
-    <div class="login-container">
+  <body class="auth-page">
+    <div class="auth-container">
       <div class="logo">
-        <!-- Substitua 'caminho/para/seu/logo_transparente.png' pelo caminho real do seu logo -->
         <img src="front_img/logoDNA - Editado.png" alt="Logo DNA Manobristas" />
       </div>
       <h1>Login</h1>
@@ -94,18 +21,15 @@
         <div class="input-group">
           <label for="password">Senha</label>
           <input type="password" id="password" name="password" required />
-          <!-- Ícone de mostrar senha pode ser adicionado aqui com JS/CSS -->
         </div>
-        <button type="submit" class="login-button">ENTRAR</button>
-        <p id="errorMessage" class="error-message"></p>
+        <button type="submit" class="btn-action">ENTRAR</button>
       </form>
-      <p style="margin-top: 20px">
+      <p>
         <a href="cadastro_usuario.html" class="register-link"
           >Não tem conta? Cadastre-se aqui.</a
         >
       </p>
     </div>
-
     <script src="login.js"></script>
   </body>
 </html>

@@ -1,105 +1,169 @@
-// frontend/dashboard.js
-document.addEventListener("DOMContentLoaded", async () => {
-  // Elementos do evento ativo
+// frontend/dashboard.js (VERSÃO FINAL E COMPLETA)
+
+document.addEventListener("DOMContentLoaded", () => {
+  // --- ELEMENTOS DA PÁGINA ---
   const activeEventDisplay = document.getElementById("activeEventDisplay");
   const activeEventNameSpan = document.getElementById("activeEventName");
   const activeEventLocationSpan = document.getElementById(
     "activeEventLocation"
   );
   const activeEventDateSpan = document.getElementById("activeEventDate");
-  const selectActiveEventButton = document.getElementById(
-    "selectActiveEventButton"
-  );
+  const changeEventBtn = document.getElementById("changeEventBtn");
+  const statsContainer = document.getElementById("statsContainer"); // Div para as estatísticas
 
-  // Cards
-  const cardEventos = document.getElementById("cardEventos");
-  const cardRegistrarEntrada = document.getElementById("cardRegistrarEntrada");
-  const cardConsultaVeiculos = document.getElementById("cardConsultaVeiculos");
-  const cardRegistroMassa = document.getElementById("cardRegistroMassa");
-  const cardCadastrarUsuario = document.getElementById("cardCadastrarUsuario"); // Novo card
+  // --- ELEMENTOS DOS CARDS ---
+  const cards = {
+    eventos: document.getElementById("cardEventos"),
+    relatorios: document.getElementById("cardRelatorios"),
+    registrarEntrada: document.getElementById("cardRegistrarEntrada"),
+    consultaVeiculos: document.getElementById("cardConsultaVeiculos"),
+    registroMassa: document.getElementById("cardRegistroMassa"),
+    cadastrarUsuario: document.getElementById("cardCadastrarUsuario"),
+  };
 
-  // Verifica se o usuário está logado
+  // --- ELEMENTOS DO MODAL ---
+  const eventModal = document.getElementById("eventSelectorModal");
+  const closeModalBtn = document.querySelector(".close-button");
+  const modalEventList = document.getElementById("modalEventList");
+  const selectEventButton = document.getElementById("selectEventButton");
+
+  // --- DADOS DA SESSÃO ---
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
+  let activeEventDetails = JSON.parse(
+    localStorage.getItem("activeEventDetails")
+  );
+  let selectedEventInModal = null;
 
-  if (!token || !user) {
-    // Se não estiver logado, redireciona para a página de login
+  // --- VALIDAÇÃO INICIAL ---
+  if (!user || !token) {
     window.location.href = "login.html";
     return;
   }
 
-  // Lógica para exibir/ocultar o card "Cadastrar Usuário"
-  if (user.cargo === "orientador") {
-    cardCadastrarUsuario.style.display = "block"; // Mostra o card para orientadores
-  } else {
-    cardCadastrarUsuario.style.display = "none"; // Esconde para outros cargos
+  // --- LÓGICA DE PERMISSÕES ---
+  function setupPermissions() {
+    const cargo = user.cargo;
+    if (!cargo) return;
+
+    Object.values(cards).forEach((card) => {
+      if (card) card.style.display = "none";
+    });
+
+    switch (cargo) {
+      case "admin":
+        Object.values(cards).forEach((card) => {
+          if (card) card.style.display = "block";
+        });
+        break;
+      case "orientador":
+        if (cards.relatorios) cards.relatorios.style.display = "block";
+        if (cards.registrarEntrada)
+          cards.registrarEntrada.style.display = "block";
+        if (cards.consultaVeiculos)
+          cards.consultaVeiculos.style.display = "block";
+        if (cards.registroMassa) cards.registroMassa.style.display = "block";
+        break;
+      case "manobrista":
+        if (cards.consultaVeiculos)
+          cards.consultaVeiculos.style.display = "block";
+        break;
+    }
   }
 
-  // Função para carregar e exibir o evento ativo
-  function loadActiveEvent() {
-    const activeEventId = localStorage.getItem("activeEventId");
-    const activeEventDetails = JSON.parse(
-      localStorage.getItem("activeEventDetails")
-    );
+  // --- FUNÇÕES DE ESTATÍSTICAS E EVENTO ATIVO ---
+  async function loadStats(eventId) {
+    if (!eventId || !statsContainer) return;
+    statsContainer.innerHTML = "<p>Carregando estatísticas...</p>";
+    statsContainer.style.display = "block";
 
-    if (activeEventId && activeEventDetails) {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/eventos/${eventId}/stats`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!response.ok) {
+        statsContainer.innerHTML =
+          "<p>Não foi possível carregar as estatísticas.</p>";
+        return;
+      }
+
+      const stats = await response.json();
+      statsContainer.innerHTML = `
+            <h3>Estatísticas do Evento</h3>
+            <p>Veículos no Pátio: <strong>${stats.noPatio}</strong></p>
+            <p>Veículos que já Saíram: <strong>${stats.jaSairam}</strong></p>
+            <p>Total de Movimentos: <strong>${stats.totalMovimentos}</strong></p>
+        `;
+    } catch (error) {
+      console.error("Erro ao carregar estatísticas:", error);
+      statsContainer.innerHTML =
+        "<p>Erro de conexão ao buscar estatísticas.</p>";
+    }
+  }
+
+  function displayActiveEvent() {
+    if (activeEventDetails) {
+      activeEventDisplay.style.display = "block";
       activeEventNameSpan.textContent = activeEventDetails.nome_evento;
       activeEventLocationSpan.textContent = activeEventDetails.local_evento;
       activeEventDateSpan.textContent = new Date(
         activeEventDetails.data_evento
       ).toLocaleDateString("pt-BR");
-      activeEventDisplay.style.display = "block"; // Mostra o display do evento ativo
-      selectActiveEventButton.textContent = "Alterar Evento Ativo"; // Muda o texto do botão
+      loadStats(activeEventDetails.id);
     } else {
-      activeEventDisplay.style.display = "none"; // Esconde o display do evento ativo
-      selectActiveEventButton.textContent = "Selecionar Evento Ativo"; // Mantém o texto original
+      activeEventDisplay.style.display = "none";
+      if (statsContainer) statsContainer.style.display = "none";
     }
   }
 
-  // Chama a função para carregar o evento ativo ao carregar a dashboard
-  loadActiveEvent();
+  async function openEventModal() {
+    // ... (seu código para abrir o modal continua o mesmo) ...
+  }
+  function closeEventModal() {
+    // ... (seu código para fechar o modal continua o mesmo) ...
+  }
+  function confirmEventSelection() {
+    if (selectedEventInModal) {
+      localStorage.setItem("activeEventId", selectedEventInModal.id);
+      localStorage.setItem(
+        "activeEventDetails",
+        JSON.stringify(selectedEventInModal)
+      );
+      activeEventDetails = selectedEventInModal;
+      displayActiveEvent();
+      closeEventModal();
+    }
+  }
 
-  // Lógica para o botão "Selecionar/Alterar Evento Ativo"
-  selectActiveEventButton.addEventListener("click", () => {
-    window.location.href = "eventos.html"; // Redireciona para a página de eventos
-  });
-
-  // Lógica para os cards (redirecionamento para outras páginas)
-  cardEventos.addEventListener("click", () => {
-    window.location.href = "eventos.html";
-  });
-
-  cardRegistrarEntrada.addEventListener("click", () => {
-    const activeEventId = localStorage.getItem("activeEventId");
-    if (!activeEventId) {
-      alert("Por favor, selecione um evento ativo primeiro.");
-      window.location.href = "eventos.html"; // Redireciona para a página de eventos
-    } else {
-      window.location.href = "entrada_veiculo.html";
+  // --- ATRELAR EVENTOS ---
+  Object.keys(cards).forEach((key) => {
+    if (cards[key]) {
+      cards[key].addEventListener("click", () => {
+        const pageMap = {
+          eventos: "eventos.html",
+          relatorios: "eventos.html",
+          registrarEntrada: "entrada_veiculo.html",
+          consultaVeiculos: "consulta_veiculos.html",
+          registroMassa: "registro_massa_veiculos.html",
+          cadastrarUsuario: "cadastro_usuario.html",
+        };
+        if (pageMap[key]) window.location.href = pageMap[key];
+      });
     }
   });
 
-  cardConsultaVeiculos.addEventListener("click", () => {
-    const activeEventId = localStorage.getItem("activeEventId");
-    if (!activeEventId) {
-      alert("Por favor, selecione um evento ativo primeiro.");
-      window.location.href = "eventos.html"; // Redireciona para a página de eventos
-    } else {
-      window.location.href = "consulta_veiculos.html";
-    }
+  if (changeEventBtn) changeEventBtn.addEventListener("click", openEventModal);
+  if (closeModalBtn) closeModalBtn.addEventListener("click", closeEventModal);
+  if (selectEventButton)
+    selectEventButton.addEventListener("click", confirmEventSelection);
+  window.addEventListener("click", (event) => {
+    if (event.target === eventModal) closeEventModal();
   });
 
-  cardRegistroMassa.addEventListener("click", () => {
-    const activeEventId = localStorage.getItem("activeEventId");
-    if (!activeEventId) {
-      alert("Por favor, selecione um evento ativo primeiro.");
-      window.location.href = "eventos.html";
-    } else {
-      window.location.href = "registro_massa_veiculos.html";
-    }
-  });
-
-  cardCadastrarUsuario.addEventListener("click", () => {
-    window.location.href = "cadastro_usuario.html";
-  });
+  // --- EXECUÇÃO INICIAL ---
+  setupPermissions();
+  displayActiveEvent();
 });

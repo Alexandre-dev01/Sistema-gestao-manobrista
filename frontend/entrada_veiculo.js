@@ -1,4 +1,4 @@
-// frontend/entrada_veiculo.js
+// frontend/entrada_veiculo.js (VERSÃO FINAL)
 document.addEventListener("DOMContentLoaded", async () => {
   const entradaVeiculoForm = document.getElementById("entradaVeiculoForm");
   const numeroTicketInput = document.getElementById("numeroTicket");
@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const corCarroInput = document.getElementById("corCarro");
   const placaCarroInput = document.getElementById("placaCarro");
   const localizacaoCarroInput = document.getElementById("localizacaoCarro");
-  const messageDisplay = document.getElementById("message");
 
   const activeEventNameSpan = document.getElementById("activeEventName");
   const activeEventLocationSpan = document.getElementById(
@@ -21,21 +20,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     localStorage.getItem("activeEventDetails")
   );
 
-  // Redireciona se não estiver logado ou se não houver evento ativo
   if (!token || !user) {
-    alert("Você precisa estar logado para acessar esta página.");
     window.location.href = "login.html";
     return;
   }
   if (!activeEventId || !activeEventDetails) {
-    alert(
-      "Nenhum evento ativo selecionado. Por favor, selecione um evento primeiro."
-    );
-    window.location.href = "eventos.html"; // Redireciona para a página de eventos
+    Swal.fire({
+      icon: "warning",
+      title: "Nenhum Evento Ativo",
+      text: "Por favor, selecione um evento antes de registrar um veículo.",
+      confirmButtonText: "Selecionar Evento",
+    }).then(() => {
+      window.location.href = "eventos.html";
+    });
     return;
   }
 
-  // Exibe os detalhes do evento ativo
   activeEventNameSpan.textContent = activeEventDetails.nome_evento;
   activeEventLocationSpan.textContent = activeEventDetails.local_evento;
   activeEventDateSpan.textContent = new Date(
@@ -44,26 +44,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   entradaVeiculoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    messageDisplay.textContent = "";
-    messageDisplay.classList.remove("success-message", "error-message");
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
 
-    const numero_ticket = numeroTicketInput.value;
-    const modelo = modeloCarroInput.value;
-    const cor = corCarroInput.value;
-    const placa = placaCarroInput.value;
-    const localizacao = localizacaoCarroInput.value;
-
-    // --- ADICIONADO: LOGS PARA DEPURAR OS DADOS ENVIADOS ---
-    console.log("[FRONTEND - Registrar Entrada Individual]");
-    console.log("Evento ID Ativo:", activeEventId);
-    console.log("Dados do Veículo a ser enviado:", {
-      numero_ticket,
-      modelo,
-      cor,
-      placa,
-      localizacao,
-    });
-    // --- FIM DOS LOGS ---
+    const veiculo = {
+      evento_id: activeEventId,
+      numero_ticket: numeroTicketInput.value,
+      modelo: modeloCarroInput.value,
+      cor: corCarroInput.value,
+      placa: placaCarroInput.value,
+      localizacao: localizacaoCarroInput.value,
+    };
 
     try {
       const response = await fetch(
@@ -74,40 +65,37 @@ document.addEventListener("DOMContentLoaded", async () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            evento_id: activeEventId, // CORRIGIDO AQUI: de id_evento para evento_id
-            numero_ticket,
-            modelo,
-            cor,
-            placa,
-            localizacao,
-          }),
+          body: JSON.stringify(veiculo),
         }
       );
-
-      // --- ADICIONADO: LOGS PARA RESPOSTA DO BACKEND ---
-      console.log(
-        "[FRONTEND - Registrar Entrada Individual] Resposta do Backend:"
-      );
-      console.log("Status:", response.status);
       const data = await response.json();
-      console.log("Dados da Resposta:", data);
-      // --- FIM DOS LOGS ---
 
       if (response.ok) {
-        messageDisplay.textContent = data.message;
-        messageDisplay.classList.add("success-message");
-        entradaVeiculoForm.reset(); // Limpa o formulário
-        numeroTicketInput.focus(); // Coloca o foco no primeiro campo para agilizar
+        Swal.fire({
+          icon: "success",
+          title: "Veículo Registrado!",
+          text: data.message,
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        entradaVeiculoForm.reset();
+        numeroTicketInput.focus();
       } else {
-        messageDisplay.textContent =
-          data.message || "Erro ao registrar veículo.";
-        messageDisplay.classList.add("error-message");
+        Swal.fire({
+          icon: "error",
+          title: "Erro ao Registrar",
+          text: data.message || "Não foi possível registrar o veículo.",
+        });
       }
     } catch (error) {
-      console.error("Erro de rede ao registrar veículo:", error);
-      messageDisplay.textContent = "Erro de conexão ao registrar veículo.";
-      messageDisplay.classList.add("error-message");
+      console.error("Erro de rede:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Erro de Conexão",
+        text: "Não foi possível conectar ao servidor.",
+      });
+    } finally {
+      submitButton.disabled = false;
     }
   });
 });

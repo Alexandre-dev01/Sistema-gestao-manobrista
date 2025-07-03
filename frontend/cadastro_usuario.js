@@ -1,4 +1,4 @@
-// frontend/cadastro_usuario.js
+// frontend/cadastro_usuario.js (VERSÃO FINAL)
 document.addEventListener("DOMContentLoaded", () => {
   const registerForm = document.getElementById("registerForm");
   const nomeUsuarioInput = document.getElementById("nome_usuario");
@@ -6,47 +6,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmSenhaInput = document.getElementById("confirm_senha");
   const cargoSelect = document.getElementById("cargo");
   const registerButton = document.getElementById("registerButton");
-  const messageDiv = document.getElementById("message");
 
-  // Elementos de validação de senha
-  const reqLength = document.getElementById("reqLength");
-  const reqUppercase = document.getElementById("reqUppercase");
-  const reqLowercase = document.getElementById("reqLowercase");
-  const reqNumber = document.getElementById("reqNumber");
-  const reqSpecial = document.getElementById("reqSpecial");
-  const matchMessage = document.getElementById("matchMessage");
-
-  // Remova esta linha, não precisamos mais do token para o registro público
-  // const token = localStorage.getItem("token");
-
-  // Função para exibir mensagens
-  function showMessage(msg, type) {
-    messageDiv.textContent = msg;
-    messageDiv.className = `message ${type}`;
-    messageDiv.style.display = "block";
-  }
-
-  // Função para validar a senha e atualizar os requisitos visuais
   function validatePassword() {
     const senha = senhaInput.value;
     const confirmSenha = confirmSenhaInput.value;
-
-    // Requisitos
     const hasLength = senha.length >= 6;
     const hasUppercase = /[A-Z]/.test(senha);
     const hasLowercase = /[a-z]/.test(senha);
     const hasNumber = /[0-9]/.test(senha);
     const hasSpecial = /[!@#$%^&*]/.test(senha);
-
-    // Atualiza classes e texto dos requisitos
-    reqLength.className = hasLength ? "valid" : "invalid";
-    reqUppercase.className = hasUppercase ? "valid" : "invalid";
-    reqLowercase.className = hasLowercase ? "valid" : "invalid";
-    reqNumber.className = hasNumber ? "valid" : "invalid";
-    reqSpecial.className = hasSpecial ? "valid" : "invalid";
-
-    // Validação de correspondência de senhas
+    document.getElementById("reqLength").className = hasLength
+      ? "valid"
+      : "invalid";
+    document.getElementById("reqUppercase").className = hasUppercase
+      ? "valid"
+      : "invalid";
+    document.getElementById("reqLowercase").className = hasLowercase
+      ? "valid"
+      : "invalid";
+    document.getElementById("reqNumber").className = hasNumber
+      ? "valid"
+      : "invalid";
+    document.getElementById("reqSpecial").className = hasSpecial
+      ? "valid"
+      : "invalid";
     const passwordsMatch = senha === confirmSenha && senha !== "";
+    const matchMessage = document.getElementById("matchMessage");
     if (confirmSenha !== "") {
       matchMessage.style.display = "block";
       matchMessage.className = passwordsMatch ? "valid" : "invalid";
@@ -56,8 +41,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       matchMessage.style.display = "none";
     }
-
-    // Habilita/Desabilita o botão de registro
     const allRequirementsMet =
       hasLength &&
       hasUppercase &&
@@ -70,64 +53,64 @@ document.addEventListener("DOMContentLoaded", () => {
     registerButton.disabled = !allRequirementsMet;
   }
 
-  // Adiciona listeners para validação em tempo real
   senhaInput.addEventListener("input", validatePassword);
   confirmSenhaInput.addEventListener("input", validatePassword);
-  nomeUsuarioInput.addEventListener("input", validatePassword); // Para habilitar o botão
-  cargoSelect.addEventListener("change", validatePassword); // Para habilitar o botão
+  nomeUsuarioInput.addEventListener("input", validatePassword);
+  cargoSelect.addEventListener("change", validatePassword);
 
-  // Listener para o formulário de registro
   registerForm.addEventListener("submit", async (e) => {
-    e.preventDefault(); // Previne o envio padrão do formulário
-
-    const nome_usuario = nomeUsuarioInput.value;
-    const senha = senhaInput.value;
-    const cargo = cargoSelect.value;
-
-    // Revalida antes de enviar (caso o usuário tenha desabilitado JS ou algo assim)
+    e.preventDefault();
     validatePassword();
     if (registerButton.disabled) {
-      showMessage(
-        "Por favor, preencha todos os campos e atenda aos requisitos da senha.",
-        "error"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Campos Inválidos",
+        text: "Por favor, preencha todos os campos e atenda aos requisitos da senha.",
+      });
       return;
     }
 
-    registerButton.disabled = true; // Desabilita o botão para evitar múltiplos envios
-    showMessage("Cadastrando usuário...", "info"); // Mensagem de carregamento
+    registerButton.disabled = true;
 
     try {
       const response = await fetch("http://localhost:3000/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Remova esta linha, não precisamos mais do cabeçalho Authorization para o registro público
-          // "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ nome_usuario, senha, cargo }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome_usuario: nomeUsuarioInput.value,
+          senha: senhaInput.value,
+          cargo: cargoSelect.value,
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        showMessage(data.message, "success");
-        registerForm.reset(); // Limpa o formulário
-        validatePassword(); // Reseta a validação visual
-        setTimeout(() => {
-          window.location.href = "login.html"; // REDIRECIONA PARA LOGIN
-        }, 2000); // Redireciona após 2 segundos para o usuário ler a mensagem
+        Swal.fire({
+          icon: "success",
+          title: "Usuário Cadastrado!",
+          text: data.message,
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => {
+          window.location.href = "login.html";
+        });
       } else {
-        showMessage(data.message || "Erro ao cadastrar usuário.", "error");
+        Swal.fire({
+          icon: "error",
+          title: "Erro no Cadastro",
+          text: data.message || "Não foi possível cadastrar o usuário.",
+        });
       }
     } catch (error) {
       console.error("Erro de rede ao cadastrar usuário:", error);
-      showMessage(
-        "Erro de conexão ao cadastrar usuário. Tente novamente.",
-        "error"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Erro de Conexão",
+        text: "Não foi possível conectar ao servidor. Tente novamente.",
+      });
     } finally {
-      registerButton.disabled = false; // Reabilita o botão
+      registerButton.disabled = false;
     }
   });
 });

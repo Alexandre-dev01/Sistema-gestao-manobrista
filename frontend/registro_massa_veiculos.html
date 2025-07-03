@@ -5,13 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Registro em Massa - Sistema de Manobrista</title>
     <link rel="stylesheet" href="style.css" />
-
-    <!-- MUDANÇA: Carregando de uma CDN diferente e em ordem -->
     <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </head>
   <body>
-    <!-- O HEADER E FOOTER SERÃO INJETADOS PELO JS -->
+    <header>
+      <div class="logo-container">
+        <img
+          src="./front_img/logoDNA - Editado.png"
+          alt="Logo DNA Manobristas"
+          class="logo"
+        />
+        <h1>Sistema de Manobristas</h1>
+      </div>
+      <div class="user-info">
+        <p id="userInfoText">Bem-vindo</p>
+        <button id="logoutButton" class="logout-button">Sair</button>
+      </div>
+    </header>
     <main>
       <h2>Registro em Massa de Veículos</h2>
       <div
@@ -62,12 +74,11 @@
       </form>
       <a href="dashboard.html" class="back-button">Voltar para Dashboard</a>
     </main>
-    <!-- Scripts do seu projeto no final do body -->
+    <footer>
+      <p>&copy; 2025 DNA Manobristas. Todos os direitos reservados.</p>
+    </footer>
     <script src="components.js"></script>
-    <!-- Carrega as funções de injeção -->
     <script src="global.js"></script>
-    <!-- Executa a injeção -->
     <script src="registro_massa_veiculos.js"></script>
-    <!-- Executa a lógica da página -->
   </body>
 </html>

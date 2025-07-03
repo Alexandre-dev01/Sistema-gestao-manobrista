@@ -5,24 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard - Sistema de Manobrista</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </head>
   <body>
+    <header>
+      <div class="logo-container">
+        <img
+          src="./front_img/logoDNA - Editado.png"
+          alt="Logo DNA Manobristas"
+          class="logo"
+        />
+        <h1>Sistema de Manobristas</h1>
+      </div>
+      <div class="user-info">
+        <p id="userInfoText">Bem-vindo</p>
+        <button id="logoutButton" class="logout-button">Sair</button>
+      </div>
+    </header>
+
     <main>
       <!-- Seção para exibir o evento ativo -->
-      <div id="activeEventDisplay" style="display: none">
-        <h2>Evento Ativo:</h2>
-        <p>Nome: <span id="activeEventName"></span></p>
-        <p>Local: <span id="activeEventLocation"></span></p>
-        <p>Data: <span id="activeEventDate"></span></p>
+      <div
+        id="activeEventDisplay"
+        class="event-info-display"
+        style="display: none"
+      >
+        <h2>Evento Ativo</h2>
+        <p><strong>Nome:</strong> <span id="activeEventName"></span></p>
+        <p><strong>Local:</strong> <span id="activeEventLocation"></span></p>
+        <p><strong>Data:</strong> <span id="activeEventDate"></span></p>
       </div>
-      <button id="selectActiveEventButton" class="btn-primary">
+
+      <!-- Botão para abrir o modal de seleção de evento -->
+      <button
+        id="changeEventBtn"
+        class="btn-primary"
+        style="margin-bottom: 20px"
+      >
         Selecionar Evento Ativo
       </button>
 
+      <!-- ADICIONADO: Container para as estatísticas do evento ativo -->
+      <div id="statsContainer" class="event-info-display" style="display: none">
+        <!-- O conteúdo aqui será preenchido pelo dashboard.js -->
+      </div>
+
+      <!-- Container dos cards de navegação -->
       <div class="card-container">
         <div class="card" id="cardEventos">
           <h2>Gerenciar Eventos</h2>
           <p>Crie e selecione eventos.</p>
+        </div>
+        <div class="card" id="cardRelatorios">
+          <h2>Relatórios</h2>
+          <p>Gere relatórios detalhados.</p>
         </div>
         <div class="card" id="cardRegistrarEntrada">
           <h2>Registrar Entrada</h2>
@@ -34,17 +70,36 @@
         </div>
         <div class="card" id="cardRegistroMassa">
           <h2>Registro em Massa</h2>
-          <p>Registre múltiplos veículos de uma vez.</p>
+          <p>Registre múltiplos veículos.</p>
         </div>
-        <!-- Card de Cadastrar Usuário - Será exibido condicionalmente pelo JS -->
         <div class="card" id="cardCadastrarUsuario" style="display: none">
           <h2>Cadastrar Usuário</h2>
-          <p>Adicione novos usuários ao sistema.</p>
+          <p>Adicione novos usuários.</p>
+        </div>
+      </div>
+
+      <!-- Modal para selecionar o evento -->
+      <div id="eventSelectorModal" class="modal" style="display: none">
+        <div class="modal-content">
+          <span class="close-button">&times;</span>
+          <h2>Selecione um Evento</h2>
+          <div id="modalEventList" class="modal-event-list">
+            <p>Carregando...</p>
+          </div>
+          <button id="selectEventButton" class="btn-primary" disabled>
+            Selecionar
+          </button>
         </div>
       </div>
     </main>
 
-    <script type="module" src="global.js"></script>
+    <footer>
+      <p>&copy; 2025 DNA Manobristas. Todos os direitos reservados.</p>
+    </footer>
+
+    <!-- Seus scripts -->
+    <script src="components.js"></script>
+    <script src="global.js"></script>
     <script src="dashboard.js"></script>
   </body>
 </html>
