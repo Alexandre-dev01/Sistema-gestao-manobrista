@@ -1,4 +1,4 @@
-// backend/routes/eventosRoutes.js (VERSÃO FINAL E COMPLETA)
+// backend/routes/eventosRoutes.js (VERSÃO FINAL, CORRIGIDA E COMPLETA)
 
 const express = require("express");
 const router = express.Router();
@@ -93,6 +93,39 @@ router.get(
     } catch (error) {
       console.error("Erro ao gerar dados do relatório:", error);
       res.status(500).json({ message: "Erro interno do servidor." });
+    }
+  }
+);
+
+// Rota para Obter Estatísticas de um Evento
+// Permissão: 'admin' e 'orientador'
+router.get(
+  "/:id/stats",
+  auth,
+  authorize("admin", "orientador"),
+  async (req, res) => {
+    const { id } = req.params;
+    try {
+      const [estacionados] = await pool.query(
+        "SELECT COUNT(*) as count FROM veiculos WHERE evento_id = ? AND status = 'estacionado'",
+        [id]
+      );
+      const [saidas] = await pool.query(
+        "SELECT COUNT(*) as count FROM veiculos WHERE evento_id = ? AND status = 'saiu'",
+        [id]
+      );
+
+      res.json({
+        noPatio: estacionados[0].count,
+        jaSairam: saidas[0].count,
+        totalMovimentos: estacionados[0].count + saidas[0].count,
+      });
+    } catch (error) {
+      console.error(
+        `[EVENTOS] Erro ao buscar estatísticas para o evento ID ${id}:`,
+        error
+      );
+      res.status(500).json({ message: "Erro ao buscar estatísticas." });
     }
   }
 );

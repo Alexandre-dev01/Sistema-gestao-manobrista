@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const activeEventDateSpan = document.getElementById("activeEventDate");
   const changeEventBtn = document.getElementById("changeEventBtn");
-  const statsContainer = document.getElementById("statsContainer"); // Div para as estatísticas
+  const statsContainer = document.getElementById("statsContainer");
 
   // --- ELEMENTOS DOS CARDS ---
   const cards = {
@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadStats(eventId) {
     if (!eventId || !statsContainer) return;
     statsContainer.innerHTML = "<p>Carregando estatísticas...</p>";
-    statsContainer.style.display = "block";
+    statsContainer.style.display = "grid";
 
     try {
       const response = await fetch(
@@ -85,26 +85,39 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       );
       if (!response.ok) {
-        statsContainer.innerHTML =
-          "<p>Não foi possível carregar as estatísticas.</p>";
-        return;
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Falha na resposta da API");
       }
 
       const stats = await response.json();
+
+      // --- CÓDIGO ALTERADO AQUI ---
+      // Gera o HTML para os cards de métricas com um design melhorado
       statsContainer.innerHTML = `
-            <h3>Estatísticas do Evento</h3>
-            <p>Veículos no Pátio: <strong>${stats.noPatio}</strong></p>
-            <p>Veículos que já Saíram: <strong>${stats.jaSairam}</strong></p>
-            <p>Total de Movimentos: <strong>${stats.totalMovimentos}</strong></p>
-        `;
+        <div class="metric-card blue">
+          <div class="metric-value">${stats.noPatio}</div>
+          <div class="metric-label">Veículos no Pátio</div>
+        </div>
+
+        <div class="metric-card green">
+          <div class="metric-value">${stats.jaSairam}</div>
+          <div class="metric-label">Veículos que já Saíram</div>
+        </div>
+
+        <div class="metric-card purple">
+          <div class="metric-value">${stats.totalMovimentos}</div>
+          <div class="metric-label">Total de Movimentos</div>
+        </div>
+      `;
     } catch (error) {
       console.error("Erro ao carregar estatísticas:", error);
-      statsContainer.innerHTML =
-        "<p>Erro de conexão ao buscar estatísticas.</p>";
+      statsContainer.style.display = "block";
+      statsContainer.innerHTML = `<p style="color: #ffbaba; grid-column: 1 / -1; text-align: center;">Não foi possível carregar as estatísticas.</p>`;
     }
   }
 
   function displayActiveEvent() {
+    activeEventDetails = JSON.parse(localStorage.getItem("activeEventDetails"));
     if (activeEventDetails) {
       activeEventDisplay.style.display = "block";
       activeEventNameSpan.textContent = activeEventDetails.nome_evento;
@@ -119,12 +132,61 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // --- FUNÇÕES DO MODAL ---
   async function openEventModal() {
-    // ... (seu código para abrir o modal continua o mesmo) ...
+    eventModal.style.display = "flex";
+    modalEventList.innerHTML = "<p>Carregando eventos...</p>";
+    selectEventButton.disabled = true;
+    selectedEventInModal = null;
+
+    try {
+      const response = await fetch("http://localhost:3000/api/eventos", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Falha ao buscar eventos.");
+
+      const events = await response.json();
+      modalEventList.innerHTML = "";
+
+      if (events.length === 0) {
+        modalEventList.innerHTML = "<p>Nenhum evento cadastrado.</p>";
+        return;
+      }
+
+      events.forEach((event) => {
+        const eventItem = document.createElement("div");
+        eventItem.className = "modal-event-item";
+        eventItem.textContent = `${event.nome_evento} (${
+          event.local_evento
+        }) - ${new Date(event.data_evento).toLocaleDateString("pt-BR")}`;
+        eventItem.dataset.eventId = event.id;
+
+        if (activeEventDetails && event.id === activeEventDetails.id) {
+          eventItem.classList.add("selected");
+        }
+
+        eventItem.addEventListener("click", () => {
+          document
+            .querySelectorAll(".modal-event-item")
+            .forEach((item) => item.classList.remove("selected"));
+          eventItem.classList.add("selected");
+          selectedEventInModal = event;
+          selectEventButton.disabled = false;
+        });
+
+        modalEventList.appendChild(eventItem);
+      });
+    } catch (error) {
+      console.error("Erro ao carregar eventos no modal:", error);
+      modalEventList.innerHTML =
+        "<p>Erro ao carregar eventos. Tente novamente.</p>";
+    }
   }
+
   function closeEventModal() {
-    // ... (seu código para fechar o modal continua o mesmo) ...
+    eventModal.style.display = "none";
   }
+
   function confirmEventSelection() {
     if (selectedEventInModal) {
       localStorage.setItem("activeEventId", selectedEventInModal.id);
@@ -132,7 +194,6 @@ document.addEventListener("DOMContentLoaded", () => {
         "activeEventDetails",
         JSON.stringify(selectedEventInModal)
       );
-      activeEventDetails = selectedEventInModal;
       displayActiveEvent();
       closeEventModal();
     }
