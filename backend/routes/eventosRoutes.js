@@ -106,8 +106,9 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
       .status(400)
       .json({ message: "Local do evento deve ter entre 3 e 100 caracteres." });
   }
-  // NOVO: Validação de Local do Evento - Formato (alfanumérico, espaços, vírgulas, pontos, hífens)
-  if (!/^[a-zA-Z0-9\s,.-]+$/.test(local_evento)) {
+  // Validação de Local do Evento - Formato (alfanumérico, espaços, vírgulas, pontos, hífens, e caracteres acentuados)
+  // Esta regex substitui a anterior para ser mais abrangente.
+  if (!/^[a-zA-Z0-9\s,.\-áàâãéèêíóôõúüçÁÀÂÃÉÈÍÓÔÕÚÜÇ]+$/.test(local_evento)) {
     return res
       .status(400)
       .json({ message: "Local do evento contém caracteres inválidos." });
@@ -120,13 +121,19 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
     });
   }
 
-  // Validação da regra de negócio - Data do Evento não pode ser passada (já existente)
-  const eventDate = new Date(data_evento);
+  // Lógica de data ajustada para comparar strings YYYY-MM-DD
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  eventDate.setHours(0, 0, 0, 0);
+  // Formata a data atual para YYYY-MM-DD no fuso horário local
+  const todayString =
+    today.getFullYear() +
+    "-" +
+    String(today.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(today.getDate()).padStart(2, "0");
 
-  if (eventDate < today) {
+  // A data_evento já vem do frontend no formato YYYY-MM-DD
+  // Compara as strings diretamente
+  if (data_evento < todayString) {
     return res
       .status(400)
       .json({ message: "A data do evento não pode ser uma data passada." });
@@ -142,7 +149,15 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
       eventoId: result.insertId,
     });
   } catch (error) {
+    // Adicione um log mais detalhado para depuração
     console.error("[EVENTOS] Erro ao criar evento:", error);
+    // Verifique se o erro é de validação de dados ou outro tipo
+    if (error.code === "ER_DATA_TOO_LONG") {
+      // Exemplo de erro MySQL para string muito longa
+      return res.status(400).json({
+        message: "Um dos campos é muito longo para o banco de dados.",
+      });
+    }
     res.status(500).json({ message: "Erro interno do servidor." });
   }
 });

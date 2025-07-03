@@ -13,44 +13,62 @@ router.post(
       req.body;
     const usuario_entrada_id = req.user.id;
 
+    // --- INÍCIO DA DEPURACAO (MANTIDO PARA VERIFICAR A LIMPEZA) ---
+    console.log("------------------------------------");
+    console.log("Dados recebidos no backend para veículo:");
+    console.log("evento_id:", evento_id);
+    console.log("numero_ticket:", numero_ticket);
+    console.log("modelo:", modelo);
+    console.log("cor:", cor);
+    console.log("placa recebida (original):", placa);
+    console.log("tipo da placa (original):", typeof placa);
+    console.log(
+      "tamanho da placa (original):",
+      placa ? placa.length : "null/undefined"
+    );
+    // --- FIM DA DEPURACAO ---
+
+    // --- CORREÇÃO: Limpar a string da placa antes da validação ---
+    // Garante que a placa é uma string e remove qualquer caractere não alfanumérico
+    const cleanedPlaca = String(placa)
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase();
+
+    console.log("placa limpa para validação:", cleanedPlaca);
+    console.log("tamanho da placa limpa:", cleanedPlaca.length);
+    // --- FIM DA CORREÇÃO ---
+
     // --- INÍCIO DAS VALIDAÇÕES DE REGRA DE NEGÓCIO ---
 
     // 1. Validação de Campos Obrigatórios
     if (
       !evento_id ||
-      !numero_ticket ||
-      !modelo ||
-      !cor ||
-      !placa ||
-      !localizacao
+      !numero_ticket.trim() || // Garante que não é apenas espaços em branco
+      !modelo.trim() ||
+      !cor.trim() ||
+      !cleanedPlaca.trim() || // Usa a placa limpa para validação de obrigatoriedade
+      !localizacao.trim()
     ) {
-      return res
-        .status(400)
-        .json({ message: "Todos os campos são obrigatórios." });
+      return res.status(400).json({
+        message: "Todos os campos são obrigatórios e não podem ser vazios.",
+      });
     }
 
     // NOVO: Validação de Número do Ticket - Tamanho (mín. 1, máx. 10)
     if (numero_ticket.length < 1 || numero_ticket.length > 10) {
-      return res
-        .status(400)
-        .json({
-          message: "Número do Ticket deve ter entre 1 e 10 caracteres.",
-        });
+      return res.status(400).json({
+        message: "Número do Ticket deve ter entre 1 e 10 caracteres.",
+      });
     }
     // NOVO: Validação de Número do Ticket - Formato (alfanumérico, pode incluir hífens)
-    // Se a regra for APENAS NÚMEROS, mude para /^[0-9]+$/.
-    // Se for alfanumérico SEM hífens, mude para /^[a-zA-Z0-9]+$/.
     if (!/^[a-zA-Z0-9-]+$/.test(numero_ticket)) {
-      // Permite letras, números e hífens para tickets
-      return res
-        .status(400)
-        .json({
-          message:
-            "Número do Ticket contém caracteres inválidos. Use apenas letras, números ou hífens.",
-        });
+      return res.status(400).json({
+        message:
+          "Número do Ticket contém caracteres inválidos. Use apenas letras, números ou hífens.",
+      });
     }
 
-    // 2. Validação de Modelo (já existente e parece ok)
+    // 2. Validação de Modelo
     if (modelo.length < 2 || modelo.length > 50) {
       return res
         .status(400)
@@ -62,7 +80,7 @@ router.post(
         .json({ message: "Modelo contém caracteres inválidos." });
     }
 
-    // 3. Validação de Cor (já existente e parece ok)
+    // 3. Validação de Cor
     if (cor.length < 2 || cor.length > 20) {
       return res
         .status(400)
@@ -74,19 +92,20 @@ router.post(
         .json({ message: "Cor contém caracteres inválidos." });
     }
 
-    // 4. Validação de Placa (já existente e parece ok)
-    if (placa.length !== 7) {
+    // 4. Validação de Placa (AGORA USANDO cleanedPlaca)
+    if (cleanedPlaca.length !== 7) {
       return res
         .status(400)
         .json({ message: "Placa deve ter exatamente 7 caracteres." });
     }
-    if (!/^[a-zA-Z0-9]+$/.test(placa)) {
+    if (!/^[a-zA-Z0-9]+$/.test(cleanedPlaca)) {
+      // Garante que é alfanumérico após a limpeza
       return res
         .status(400)
         .json({ message: "Placa contém caracteres inválidos." });
     }
 
-    // 5. Validação de Localização (já existente e parece ok)
+    // 5. Validação de Localização
     if (localizacao.length < 1 || localizacao.length > 50) {
       return res
         .status(400)
@@ -101,7 +120,7 @@ router.post(
     // --- FIM DAS VALIDAÇÕES DE REGRA DE NEGÓCIO ---
 
     try {
-      // Validação de Ticket Único por Evento (já existente e é mantida)
+      // Validação de Ticket Único por Evento
       const [existingVehicle] = await pool.query(
         "SELECT id FROM veiculos WHERE evento_id = ? AND numero_ticket = ?",
         [evento_id, numero_ticket]
@@ -120,7 +139,7 @@ router.post(
           numero_ticket,
           modelo,
           cor,
-          placa,
+          cleanedPlaca, // Insere a placa limpa no banco de dados
           localizacao,
           hora_entrada,
           usuario_entrada_id,
@@ -137,7 +156,7 @@ router.post(
   }
 );
 
-// Rota para Registrar a Saída de um Veículo - Sem alterações necessárias para validação de entrada
+// Rota para Registrar a Saída de um Veículo
 router.put(
   "/saida/:id",
   auth,
@@ -175,7 +194,7 @@ router.put(
   }
 );
 
-// Rota para Listar Veículos de um Evento Específico - Sem alterações necessárias para validação de entrada
+// Rota para Listar Veículos de um Evento Específico
 router.get(
   "/evento/:idEvento",
   auth,
