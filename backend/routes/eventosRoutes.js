@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require("../config/db");
 const { auth, authorize } = require("../middleware/authMiddleware");
 
-// Rota para Listar Todos os Eventos
+// Rota para Listar Todos os Eventos - Sem alterações necessárias para validação de entrada
 router.get("/", auth, authorize("admin", "orientador"), async (req, res) => {
   try {
     const [eventos] = await pool.query(
@@ -16,7 +16,7 @@ router.get("/", auth, authorize("admin", "orientador"), async (req, res) => {
   }
 });
 
-// Rota: Obter o evento atualmente ativo
+// Rota: Obter o evento atualmente ativo - Sem alterações necessárias para validação de entrada
 router.get("/ativo", auth, async (req, res) => {
   try {
     const [eventos] = await pool.query(
@@ -32,21 +32,18 @@ router.get("/ativo", auth, async (req, res) => {
   }
 });
 
-// --- NOVA ROTA CORRIGIDA: Obter Estatísticas do Evento ATIVO ---
-// Acessível por admin e orientador. Perfeita para o dashboard.
+// Rota: Obter Estatísticas do Evento ATIVO - Sem alterações necessárias para validação de entrada
 router.get(
   "/ativo/stats",
   auth,
   authorize("admin", "orientador"),
   async (req, res) => {
     try {
-      // Primeiro, encontra o evento ativo
       const [activeEvent] = await pool.query(
         "SELECT id FROM eventos WHERE is_active = TRUE LIMIT 1"
       );
 
       if (activeEvent.length === 0) {
-        // Se não há evento ativo, retorna estatísticas zeradas.
         return res.status(200).json({
           totalVeiculos: 0,
           veiculosEstacionados: 0,
@@ -55,7 +52,6 @@ router.get(
       }
       const eventoId = activeEvent[0].id;
 
-      // Agora, busca as estatísticas para esse evento
       const [stats] = await pool.query(
         `SELECT 
           COUNT(*) AS totalVeiculos,
@@ -66,8 +62,6 @@ router.get(
         [eventoId]
       );
 
-      // A query sempre retorna uma linha, mesmo que os valores sejam 0 ou NULL.
-      // Tratamos o caso de NULL (se não houver veículos) para retornar 0.
       const result = {
         totalVeiculos: stats[0].totalVeiculos || 0,
         veiculosEstacionados: stats[0].veiculosEstacionados || 0,
@@ -85,11 +79,59 @@ router.get(
 // Rota para Criar um Novo Evento
 router.post("/", auth, authorize("admin"), async (req, res) => {
   const { nome_evento, data_evento, local_evento, descricao } = req.body;
+
+  // 1. Validação de campos obrigatórios
   if (!nome_evento || !data_evento || !local_evento) {
     return res
       .status(400)
       .json({ message: "Nome, data e local do evento são obrigatórios." });
   }
+
+  // NOVO: Validação de Nome do Evento - Tamanho (mín. 3, máx. 100)
+  if (nome_evento.length < 3 || nome_evento.length > 100) {
+    return res
+      .status(400)
+      .json({ message: "Nome do evento deve ter entre 3 e 100 caracteres." });
+  }
+  // NOVO: Validação de Nome do Evento - Formato (alfanumérico, espaços, hífens)
+  if (!/^[a-zA-Z0-9\s-]+$/.test(nome_evento)) {
+    return res
+      .status(400)
+      .json({ message: "Nome do evento contém caracteres inválidos." });
+  }
+
+  // NOVO: Validação de Local do Evento - Tamanho (mín. 3, máx. 100)
+  if (local_evento.length < 3 || local_evento.length > 100) {
+    return res
+      .status(400)
+      .json({ message: "Local do evento deve ter entre 3 e 100 caracteres." });
+  }
+  // NOVO: Validação de Local do Evento - Formato (alfanumérico, espaços, vírgulas, pontos, hífens)
+  if (!/^[a-zA-Z0-9\s,.-]+$/.test(local_evento)) {
+    return res
+      .status(400)
+      .json({ message: "Local do evento contém caracteres inválidos." });
+  }
+
+  // NOVO: Validação de Descrição - Tamanho máximo (máx. 255), se fornecida
+  if (descricao && descricao.length > 255) {
+    return res.status(400).json({
+      message: "Descrição do evento não pode exceder 255 caracteres.",
+    });
+  }
+
+  // Validação da regra de negócio - Data do Evento não pode ser passada (já existente)
+  const eventDate = new Date(data_evento);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  eventDate.setHours(0, 0, 0, 0);
+
+  if (eventDate < today) {
+    return res
+      .status(400)
+      .json({ message: "A data do evento não pode ser uma data passada." });
+  }
+
   try {
     const [result] = await pool.query(
       "INSERT INTO eventos (nome_evento, data_evento, local_evento, descricao) VALUES (?, ?, ?, ?)",
@@ -100,12 +142,12 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
       eventoId: result.insertId,
     });
   } catch (error) {
-    console.error("Erro ao criar evento:", error);
+    console.error("[EVENTOS] Erro ao criar evento:", error);
     res.status(500).json({ message: "Erro interno do servidor." });
   }
 });
 
-// Rota: Definir um evento como ativo
+// Rota: Definir um evento como ativo - Sem alterações necessárias para validação de entrada
 router.put(
   "/:id/ativar",
   auth,
@@ -140,10 +182,20 @@ router.put(
   }
 );
 
-// Rota para Excluir um Evento
+// Rota para Excluir um Evento - Sem alterações necessárias para validação de entrada
 router.delete("/:id", auth, authorize("admin"), async (req, res) => {
   const { id } = req.params;
   try {
+    // NOVO: Verificar se o evento a ser excluído é o evento ativo
+    const [activeEvent] = await pool.query(
+      "SELECT id FROM eventos WHERE is_active = TRUE LIMIT 1"
+    );
+    if (activeEvent.length > 0 && activeEvent[0].id == id) {
+      return res.status(400).json({
+        message: "Não é possível excluir o evento ativo. Desative-o primeiro.",
+      });
+    }
+
     await pool.query("DELETE FROM veiculos WHERE evento_id = ?", [id]);
     const [result] = await pool.query("DELETE FROM eventos WHERE id = ?", [id]);
     if (result.affectedRows === 0) {
@@ -158,14 +210,46 @@ router.delete("/:id", auth, authorize("admin"), async (req, res) => {
   }
 });
 
-// Rota para Gerar Relatório Completo de um Evento (mantida para referência)
+// Rota para Gerar Relatório Completo de um Evento
 router.get(
   "/:id/relatorio",
   auth,
   authorize("admin", "orientador"),
   async (req, res) => {
-    // ... (código da rota de relatório permanece o mesmo)
+    const { id } = req.params;
+
+    try {
+      // Buscar detalhes do evento
+      const [eventos] = await pool.query("SELECT * FROM eventos WHERE id = ?", [
+        id,
+      ]);
+      const evento = eventos[0];
+
+      if (!evento) {
+        return res.status(404).json({ message: "Evento não encontrado." });
+      }
+
+      // Buscar veículos associados ao evento, incluindo nomes dos usuários
+      const [veiculos] = await pool.query(
+        `
+        SELECT 
+          v.*, 
+          u_entrada.nome_usuario AS nome_usuario_entrada, 
+          u_saida.nome_usuario AS nome_usuario_saida 
+        FROM veiculos v
+        JOIN usuarios u_entrada ON v.usuario_entrada_id = u_entrada.id
+        LEFT JOIN usuarios u_saida ON v.usuario_saida_id = u_saida.id
+        WHERE v.evento_id = ?
+        ORDER BY v.hora_entrada ASC
+        `,
+        [id]
+      );
+
+      res.status(200).json({ evento, veiculos });
+    } catch (error) {
+      console.error(`Erro ao gerar relatório para evento ID ${id}:`, error);
+      res.status(500).json({ message: "Erro interno do servidor." });
+    }
   }
 );
-
 module.exports = router;

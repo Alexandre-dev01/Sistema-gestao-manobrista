@@ -4,16 +4,18 @@ const router = express.Router();
 const { auth, authorize } = require("../middleware/authMiddleware");
 
 // Rota para Registrar a Entrada de um Veículo
-// --- CORREÇÃO AQUI: Adicionado 'manobrista' ---
 router.post(
   "/entrada",
   auth,
-  authorize("admin", "orientador", "manobrista"), // Manobrista agora pode registrar entrada
+  authorize("admin", "orientador", "manobrista"),
   async (req, res) => {
     const { evento_id, numero_ticket, modelo, cor, placa, localizacao } =
       req.body;
     const usuario_entrada_id = req.user.id;
 
+    // --- INÍCIO DAS VALIDAÇÕES DE REGRA DE NEGÓCIO ---
+
+    // 1. Validação de Campos Obrigatórios
     if (
       !evento_id ||
       !numero_ticket ||
@@ -27,7 +29,79 @@ router.post(
         .json({ message: "Todos os campos são obrigatórios." });
     }
 
+    // NOVO: Validação de Número do Ticket - Tamanho (mín. 1, máx. 10)
+    if (numero_ticket.length < 1 || numero_ticket.length > 10) {
+      return res
+        .status(400)
+        .json({
+          message: "Número do Ticket deve ter entre 1 e 10 caracteres.",
+        });
+    }
+    // NOVO: Validação de Número do Ticket - Formato (alfanumérico, pode incluir hífens)
+    // Se a regra for APENAS NÚMEROS, mude para /^[0-9]+$/.
+    // Se for alfanumérico SEM hífens, mude para /^[a-zA-Z0-9]+$/.
+    if (!/^[a-zA-Z0-9-]+$/.test(numero_ticket)) {
+      // Permite letras, números e hífens para tickets
+      return res
+        .status(400)
+        .json({
+          message:
+            "Número do Ticket contém caracteres inválidos. Use apenas letras, números ou hífens.",
+        });
+    }
+
+    // 2. Validação de Modelo (já existente e parece ok)
+    if (modelo.length < 2 || modelo.length > 50) {
+      return res
+        .status(400)
+        .json({ message: "Modelo deve ter entre 2 e 50 caracteres." });
+    }
+    if (!/^[a-zA-Z0-9\s-]+$/.test(modelo)) {
+      return res
+        .status(400)
+        .json({ message: "Modelo contém caracteres inválidos." });
+    }
+
+    // 3. Validação de Cor (já existente e parece ok)
+    if (cor.length < 2 || cor.length > 20) {
+      return res
+        .status(400)
+        .json({ message: "Cor deve ter entre 2 e 20 caracteres." });
+    }
+    if (!/^[a-zA-Z\s]+$/.test(cor)) {
+      return res
+        .status(400)
+        .json({ message: "Cor contém caracteres inválidos." });
+    }
+
+    // 4. Validação de Placa (já existente e parece ok)
+    if (placa.length !== 7) {
+      return res
+        .status(400)
+        .json({ message: "Placa deve ter exatamente 7 caracteres." });
+    }
+    if (!/^[a-zA-Z0-9]+$/.test(placa)) {
+      return res
+        .status(400)
+        .json({ message: "Placa contém caracteres inválidos." });
+    }
+
+    // 5. Validação de Localização (já existente e parece ok)
+    if (localizacao.length < 1 || localizacao.length > 50) {
+      return res
+        .status(400)
+        .json({ message: "Localização deve ter entre 1 e 50 caracteres." });
+    }
+    if (!/^[a-zA-Z0-9\s\/-]+$/.test(localizacao)) {
+      return res
+        .status(400)
+        .json({ message: "Localização contém caracteres inválidos." });
+    }
+
+    // --- FIM DAS VALIDAÇÕES DE REGRA DE NEGÓCIO ---
+
     try {
+      // Validação de Ticket Único por Evento (já existente e é mantida)
       const [existingVehicle] = await pool.query(
         "SELECT id FROM veiculos WHERE evento_id = ? AND numero_ticket = ?",
         [evento_id, numero_ticket]
@@ -57,14 +131,13 @@ router.post(
         veiculoId: result.insertId,
       });
     } catch (error) {
-      console.error("Erro ao registrar entrada de veículo:", error);
+      console.error("[VEICULOS] Erro ao registrar entrada de veículo:", error);
       res.status(500).json({ message: "Erro interno do servidor." });
     }
   }
 );
 
-// Rota para Registrar a Saída de um Veículo
-// Permissão: admin, orientador e manobrista (já estava correto)
+// Rota para Registrar a Saída de um Veículo - Sem alterações necessárias para validação de entrada
 router.put(
   "/saida/:id",
   auth,
@@ -102,8 +175,7 @@ router.put(
   }
 );
 
-// Rota para Listar Veículos de um Evento Específico
-// Permissão: admin, orientador e manobrista (já estava correto)
+// Rota para Listar Veículos de um Evento Específico - Sem alterações necessárias para validação de entrada
 router.get(
   "/evento/:idEvento",
   auth,

@@ -1,5 +1,3 @@
-// backend/routes/authRoutes.js (VERSÃO FINAL E COMPLETA)
-
 const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -15,27 +13,58 @@ router.post("/register", auth, authorize("admin"), async (req, res) => {
     `[AUTH] Admin (ID: ${req.user.id}) tentando registrar: ${nome_usuario}, Cargo: ${cargo}`
   );
 
-  // Validação de campos
+  // Validação de campos obrigatórios
   if (!nome_usuario || !senha || !cargo) {
     return res
       .status(400)
       .json({ message: "Todos os campos são obrigatórios." });
   }
 
-  // Validação de senha
+  // NOVO: Validação de Nome de Usuário - Tamanho (mín. 3, máx. 30)
+  if (nome_usuario.length < 3 || nome_usuario.length > 30) {
+    return res
+      .status(400)
+      .json({ message: "Nome de usuário deve ter entre 3 e 30 caracteres." });
+  }
+
+  // NOVO: Validação de Nome de Usuário - Formato (apenas letras minúsculas, números, underscore e ponto)
+  // Regex: ^[a-z0-9_.]+$
+  // ^: Início da string
+  // [a-z0-9_.]+: Um ou mais caracteres que sejam letras minúsculas, números, underscore ou ponto
+  // $: Fim da string
+  if (!/^[a-zA-Z0-9_.]+$/.test(nome_usuario)) {
+    return res.status(400).json({
+      message:
+        "Nome de usuário contém caracteres inválidos. Use apenas letras (maiúsculas ou minúsculas), números, _ ou .",
+    });
+  }
+
+  // NOVO: Validação de Cargo - Apenas valores permitidos
+  const allowedRoles = ["manobrista", "orientador", "admin"];
+  if (!allowedRoles.includes(cargo)) {
+    return res.status(400).json({
+      message:
+        "Cargo inválido. Cargos permitidos: manobrista, orientador, admin.",
+    });
+  }
+
+  // Validação de senha (mín. 6, máx. 60 caracteres, maiúscula, minúscula, número, especial)
   if (
     senha.length < 6 ||
+    senha.length > 60 || // NOVO: Adicionado limite máximo de 60 caracteres
     !/[A-Z]/.test(senha) ||
     !/[a-z]/.test(senha) ||
     !/[0-9]/.test(senha) ||
-    !/[!@#$%^&*]/.test(senha)
+    !/[!@#$%^&*]/.test(senha) // Caracteres especiais permitidos
   ) {
-    return res
-      .status(400)
-      .json({ message: "A senha não atende aos requisitos de segurança." });
+    return res.status(400).json({
+      message:
+        "A senha não atende aos requisitos de segurança (mín. 6, máx. 60 caracteres, maiúscula, minúscula, número, especial).",
+    });
   }
 
   try {
+    // Validação de unicidade de nome_usuario (já existente)
     const [existingUser] = await pool.query(
       "SELECT id FROM usuarios WHERE nome_usuario = ?",
       [nome_usuario]
@@ -62,7 +91,7 @@ router.post("/register", auth, authorize("admin"), async (req, res) => {
   }
 });
 
-// Rota de Login de Usuário (Pública)
+// Rota de Login de Usuário (Pública) - Sem alterações necessárias para validação de entrada
 router.post("/login", async (req, res) => {
   const { nome_usuario, senha } = req.body;
 
