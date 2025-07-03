@@ -1,34 +1,49 @@
-// backend/middleware/authMiddleware.js
-const jwt = require('jsonwebtoken');
+// backend/middleware/authMiddleware.js (VERSÃO FINAL E COMPLETA)
 
+const jwt = require("jsonwebtoken");
+
+/**
+ * Middleware para verificar se o usuário está autenticado via token JWT.
+ * Ele valida o token e anexa os dados do usuário (id, cargo) ao objeto `req`.
+ */
 const auth = (req, res, next) => {
-    // Tenta obter o token do cabeçalho 'Authorization'
-    const token = req.header('Authorization');
+  const authHeader = req.header("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      message: "Acesso negado. Token não fornecido ou mal formatado.",
+    });
+  }
 
-    // Verifica se o token existe
-    if (!token) {
-        return res.status(401).json({ message: 'Nenhum token fornecido, autorização negada.' });
-    }
+  const token = authHeader.substring(7); // Remove "Bearer "
 
-    // O token geralmente vem no formato "Bearer SEU_TOKEN_AQUI"
-    // Precisamos extrair apenas o token
-    const tokenParts = token.split(' ');
-    if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer') {
-        return res.status(401).json({ message: 'Formato de token inválido.' });
-    }
-    const actualToken = tokenParts[1];
-
-    try {
-        // Verifica e decodifica o token
-        const decoded = jwt.verify(actualToken, process.env.JWT_SECRET);
-
-        // Adiciona as informações do usuário decodificadas ao objeto de requisição
-        req.user = decoded; // { id: user.id, cargo: user.cargo }
-        next(); // Chama a próxima função middleware ou a rota
-    } catch (error) {
-        console.error('Erro na verificação do token:', error);
-        res.status(401).json({ message: 'Token inválido ou expirado.' });
-    }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Adiciona { id, cargo } ao request
+    next();
+  } catch (error) {
+    res.status(401).json({ message: "Token inválido ou expirado." });
+  }
 };
 
-module.exports = auth;
+/**
+ * Middleware para verificar se o usuário autenticado tem um dos cargos permitidos.
+ * Deve ser usado SEMPRE DEPOIS do middleware `auth`.
+ * @param {...string} allowedRoles - Uma lista de cargos permitidos (ex: 'admin', 'orientador').
+ */
+const authorize = (...allowedRoles) => {
+  return (req, res, next) => {
+    // O objeto req.user foi adicionado pelo middleware 'auth'
+    if (!req.user || !allowedRoles.includes(req.user.cargo)) {
+      return res.status(403).json({
+        message:
+          "Acesso proibido. Você não tem permissão para realizar esta ação.",
+      });
+    }
+    next(); // Se o cargo do usuário está na lista, permite o acesso.
+  };
+};
+
+module.exports = {
+  auth,
+  authorize,
+};
