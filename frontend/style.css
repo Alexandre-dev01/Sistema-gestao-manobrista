@@ -201,6 +201,10 @@ textarea {
   text-decoration: none;
   font-weight: bold;
 }
+.back-link:hover,
+.register-link:hover {
+  text-decoration: underline;
+}
 .message {
   margin-top: 15px;
   text-align: center;
@@ -266,15 +270,15 @@ textarea {
 .table-responsive {
   display: block;
   width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: auto; /* Isso permite a rolagem horizontal */
+  -webkit-overflow-scrolling: touch; /* Melhora a rolagem em dispositivos iOS */
   margin-bottom: 20px;
   border-radius: 8px;
   border: 1px solid #0f3460;
 }
 table {
   width: 100%;
-  min-width: 650px;
+  min-width: 700px;
   border-collapse: collapse;
 }
 table th,
@@ -614,6 +618,29 @@ table td button.remove-row-btn:hover {
   .event-item .actions button {
     width: 100%;
   }
+  /* Ajuste para tabelas em telas menores */
+  table {
+    min-width: unset; /* Remove o min-width fixo */
+  }
+  table th,
+  table td {
+    padding: 8px; /* Reduz o padding */
+    font-size: 0.9em; /* Reduz o tamanho da fonte */
+  }
+  table td input {
+    width: 100%; /* Garante que o input ocupe toda a célula */
+    padding: 4px;
+  }
+  .generate-table-section {
+    flex-direction: column;
+    align-items: stretch; /* Estica os itens para preencher a largura */
+  }
+  .generate-table-section input[type="number"],
+  .generate-table-section .btn-primary,
+  .generate-table-section .btn-secondary {
+    max-width: 100%; /* Permite que ocupem a largura total */
+    width: 100%;
+  }
 }
 
 @media screen and (max-width: 480px) {
@@ -665,6 +692,13 @@ table td button.remove-row-btn:hover {
   .vehicle-item p {
     font-size: 0.85em;
   }
+  .modal-content {
+    padding: 15px;
+  }
+  .close-button {
+    font-size: 24px;
+    right: 15px;
+  }
 }
 
 /* --- ADICIONADO: ESTILOS PARA O DASHBOARD DE ESTATÍSTICAS --- */
@@ -714,4 +748,142 @@ table td button.remove-row-btn:hover {
 .metric-label {
   font-size: 1em;
   color: #bdc3c7;
+}
+/* --- REFINAMENTO UX: FEEDBACK VISUAL EM FORMULÁRIOS --- */
+
+/* Melhora o foco nos inputs e textareas */
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="date"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  outline: none; /* Remove o contorno padrão do navegador */
+  border-color: #ff5722; /* Usa a cor do tema para a borda */
+  box-shadow: 0 0 8px rgba(255, 87, 34, 0.5); /* Adiciona um brilho sutil */
+}
+
+@media screen and (max-width: 768px) {
+  /* ... outras regras ... */
+
+  table {
+    min-width: 800px; /* Aumentado para dar mais espaço. Ajuste conforme necessário. */
+  }
+
+  table th,
+  table td {
+    padding: 8px; /* Mantido, mas pode ser ajustado se necessário */
+    font-size: 0.9em;
+  }
+
+  table td input {
+    width: 100%; /* Garante que o input ocupe toda a célula */
+    min-width: 100px; /* NOVO: Garante uma largura mínima para o input */
+    padding: 6px; /* Aumenta um pouco o padding interno do input para melhor visualização */
+    font-size: 0.9em; /* Ajusta o tamanho da fonte dentro do input */
+    box-sizing: border-box; /* Garante que padding e borda sejam incluídos na largura */
+  }
+}
+table th:nth-child(2),
+table td:nth-child(2) {
+  min-width: 80px; /* Largura mínima menor para a coluna Ticket */
+}
+.loading-message {
+  text-align: center;
+  margin-top: 20px;
+  color: #b0b0b0;
+  font-style: italic;
+}
+
+/* Melhoria visual do cabeçalho do item do veículo */
+.vehicle-item .vehicle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  flex-wrap: wrap; /* Para quebrar linha em telas pequenas */
+}
+
+.vehicle-item .vehicle-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+  color: #e0e0e0;
+}
+
+/* Estilos para o status */
+.vehicle-item .status {
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 0.8em;
+  white-space: nowrap; /* Evita quebra de linha no status */
+}
+
+.vehicle-item .status.status-estacionado {
+  background-color: #007bff; /* Azul */
+  color: white;
+}
+
+.vehicle-item .status.status-saiu {
+  background-color: #28a745; /* Verde */
+  color: white;
+}
+
+/* Ajuste para o botão de saída, se necessário */
+.vehicle-item .action-button.saida {
+  /* Mantenha seus estilos existentes ou ajuste */
+  background-color: #ff5722; /* Laranja */
+}
+.vehicle-item .action-button.saida:hover {
+  background-color: #e64a19;
+}
+
+/* Ajustes para responsividade dos itens da lista */
+@media (max-width: 480px) {
+  .vehicle-item .vehicle-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  .vehicle-item .vehicle-header h3 {
+    font-size: 1em;
+  }
+  .vehicle-item .status {
+    font-size: 0.75em;
+  }
+}
+/* Estilos para campos inválidos */
+.invalid-field {
+  border: 2px solid #dc3545 !important; /* Borda vermelha */
+  box-shadow: 0 0 5px rgba(220, 53, 69, 0.5); /* Sombra vermelha */
+}
+
+/* Estilos para linhas de sucesso */
+.success-row {
+  background-color: #28a74533; /* Verde claro transparente */
+  transition: background-color 0.5s ease;
+}
+
+/* Estilos para linhas de erro */
+.error-row {
+  background-color: #dc354533; /* Vermelho claro transparente */
+  transition: background-color 0.5s ease;
+}
+
+/* Estilos para mensagens de erro dentro da célula da tabela */
+.error-message-cell {
+  color: #dc3545; /* Texto vermelho */
+  font-size: 0.8em;
+  font-weight: bold;
+  text-align: center;
+  padding: 5px !important;
+  border-top: 1px solid #dc3545 !important;
+}
+.vehicle-item p.obs {
+  background-color: #1a1a2e; /* Cor de fundo um pouco mais escura */
+  padding: 8px;
+  border-radius: 4px;
+  border-left: 3px solid #ffc107; /* Cor de destaque amarela */
+  font-style: italic;
+  margin-top: 8px;
 }

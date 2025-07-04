@@ -6,6 +6,7 @@
     <title>Registrar Entrada - Sistema de Manobrista</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/imask"></script>
   </head>
   <body>
     <header>
@@ -30,26 +31,38 @@
           <p>Local: <span id="activeEventLocation">Nenhum</span></p>
           <p>Data: <span id="activeEventDate">Nenhum</span></p>
         </div>
-        <form id="entradaVeiculoForm">
+
+        <form id="entradaVeiculoForm" autocomplete="off">
           <div class="form-group">
-            <label for="numeroTicket">Número do Ticket</label
-            ><input type="text" id="numeroTicket" required />
+            <label for="numeroTicket">Número do Ticket</label>
+            <input type="text" id="numeroTicket" required maxlength="10" />
           </div>
           <div class="form-group">
-            <label for="modeloCarro">Modelo do Carro</label
-            ><input type="text" id="modeloCarro" required />
+            <label for="modeloCarro">Modelo do Carro</label>
+            <input type="text" id="modeloCarro" required maxlength="50" />
           </div>
           <div class="form-group">
-            <label for="corCarro">Cor</label
-            ><input type="text" id="corCarro" required />
+            <label for="corCarro">Cor</label>
+            <input type="text" id="corCarro" required maxlength="20" />
           </div>
           <div class="form-group">
-            <label for="placaCarro">Placa</label
-            ><input type="text" id="placaCarro" required />
+            <label for="placaCarro">Placa</label>
+            <input
+              type="text"
+              id="placaCarro"
+              required
+              autocomplete="off"
+              maxlength="8"
+            />
           </div>
           <div class="form-group">
-            <label for="localizacaoCarro">Localização (Fila/Setor)</label
-            ><input type="text" id="localizacaoCarro" required />
+            <label for="localizacaoCarro">Localização (Fila/Setor )</label>
+            <input type="text" id="localizacaoCarro" required maxlength="50" />
+          </div>
+
+          <div class="form-group">
+            <label for="observacoesCarro">Observações (opcional)</label>
+            <textarea id="observacoesCarro" rows="3" maxlength="255"></textarea>
           </div>
           <button type="submit" class="btn-primary">Registrar Entrada</button>
           <p id="message" class="message"></p>
@@ -60,6 +73,7 @@
     <footer>
       <p>&copy; 2025 DNA Manobristas. Todos os direitos reservados.</p>
     </footer>
+    <script src="config.js"></script>
     <script src="components.js"></script>
     <script src="global.js"></script>
     <script src="entrada_veiculo.js"></script>

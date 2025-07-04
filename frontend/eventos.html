@@ -30,20 +30,20 @@
         <h2>Criar Novo Evento</h2>
         <form id="createEventForm">
           <div class="form-group">
-            <label for="nomeEvento">Nome do Evento</label
-            ><input type="text" id="nomeEvento" required />
+            <label for="nomeEvento">Nome do Evento</label>
+            <input type="text" id="nomeEvento" required maxlength="100" />
           </div>
           <div class="form-group">
-            <label for="dataEvento">Data do Evento</label
-            ><input type="date" id="dataEvento" required />
+            <label for="dataEvento">Data do Evento</label>
+            <input type="date" id="dataEvento" required />
           </div>
           <div class="form-group">
-            <label for="localEvento">Local do Evento</label
-            ><input type="text" id="localEvento" required />
+            <label for="localEvento">Local do Evento</label>
+            <input type="text" id="localEvento" required maxlength="100" />
           </div>
           <div class="form-group">
-            <label for="descricaoEvento">Descrição (Opcional )</label
-            ><textarea id="descricaoEvento" rows="3"></textarea>
+            <label for="descricaoEvento">Descrição (Opcional )</label>
+            <textarea id="descricaoEvento" rows="3" maxlength="255"></textarea>
           </div>
           <button type="submit" class="btn-primary">Criar Evento</button>
           <p id="createMessage" class="message"></p>
@@ -62,6 +62,7 @@
     <footer>
       <p>&copy; 2025 DNA Manobristas. Todos os direitos reservados.</p>
     </footer>
+    <script src="config.js"></script>
     <script src="components.js"></script>
     <script src="global.js"></script>
     <script src="eventos.js"></script>

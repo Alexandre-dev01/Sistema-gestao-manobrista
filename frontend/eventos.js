@@ -1,5 +1,11 @@
-// frontend/eventos.js (VERSÃO FINAL)
-document.addEventListener("DOMContentLoaded", async () => {
+// Arquivo: eventos.js (VERSÃO FINAL E SIMPLIFICADA)
+
+document.addEventListener("DOMContentLoaded", () => {
+  // --- BLOCO DE VERIFICAÇÃO SIMPLIFICADO ---
+  const { token, user } = verificarAutenticacao();
+  if (!user) return; // Para a execução se o usuário não for autenticado
+  // --- FIM DO BLOCO ---
+
   const createEventForm = document.getElementById("createEventForm");
   const nomeEventoInput = document.getElementById("nomeEvento");
   const dataEventoInput = document.getElementById("dataEvento");
@@ -8,17 +14,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const eventsContainer = document.getElementById("eventsContainer");
   const noEventsMessage = document.getElementById("noEventsMessage");
 
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  if (!token || !user) {
-    window.location.href = "login.html";
-    return;
-  }
-
   async function loadEvents() {
+    eventsContainer.innerHTML = "<p>Carregando eventos...</p>";
+    noEventsMessage.style.display = "none";
+
     try {
-      const response = await fetch("http://localhost:3000/api/eventos", {
+      const response = await fetch(`${API_BASE_URL}/api/eventos`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -26,12 +27,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (response.ok) {
         eventsContainer.innerHTML = "";
         noEventsMessage.style.display = data.length === 0 ? "block" : "none";
-        const activeEventId = localStorage.getItem("activeEventId");
 
         data.forEach((event) => {
           const eventItem = document.createElement("div");
           eventItem.classList.add("event-item");
-          const isActive = event.id == activeEventId;
+          const isActive = event.is_active;
+
           eventItem.innerHTML = `
               <h3>${event.nome_evento} ${
             isActive
@@ -79,24 +80,45 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function addEventListeners() {
     document.querySelectorAll(".set-active-btn").forEach((button) => {
-      button.addEventListener("click", (e) => {
+      button.addEventListener("click", async (e) => {
+        const eventId = e.target.dataset.eventId;
         const eventDetails = JSON.parse(e.target.dataset.eventDetails);
-        localStorage.setItem("activeEventId", eventDetails.id);
-        localStorage.setItem(
-          "activeEventDetails",
-          JSON.stringify(eventDetails)
-        );
+
         Swal.fire({
-          icon: "success",
-          title: "Evento Ativado!",
-          text: `O evento "${eventDetails.nome_evento}" agora está ativo.`,
-          toast: true,
-          position: "top-end",
-          showConfirmButton: false,
-          timer: 3000,
-          timerProgressBar: true,
+          title: "Ativando evento...",
+          text: "Por favor, aguarde.",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading(),
         });
-        loadEvents();
+
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/api/eventos/${eventId}/ativar`,
+            {
+              method: "PUT",
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          const data = await response.json();
+          if (!response.ok)
+            throw new Error(data.message || "Falha ao ativar o evento.");
+
+          localStorage.setItem("activeEventId", eventId);
+          localStorage.setItem(
+            "activeEventDetails",
+            JSON.stringify(eventDetails)
+          );
+
+          Swal.fire({
+            icon: "success",
+            title: "Evento Ativado!",
+            text: `O evento "${eventDetails.nome_evento}" agora está ativo.`,
+          });
+          loadEvents();
+        } catch (error) {
+          Swal.fire("Erro!", error.message, "error");
+        }
       });
     });
 
@@ -108,15 +130,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           text: "Esta ação é irreversível e excluirá o evento e todos os veículos associados!",
           icon: "warning",
           showCancelButton: true,
-          confirmButtonColor: "#d33",
-          cancelButtonColor: "#3085d6",
           confirmButtonText: "Sim, excluir!",
           cancelButtonText: "Cancelar",
         }).then(async (result) => {
           if (result.isConfirmed) {
             try {
               const response = await fetch(
-                `http://localhost:3000/api/eventos/${eventId}`,
+                `${API_BASE_URL}/api/eventos/${eventId}`,
                 {
                   method: "DELETE",
                   headers: { Authorization: `Bearer ${token}` },
@@ -177,7 +197,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       descricao: descricaoEventoInput.value,
     };
     try {
-      const response = await fetch("http://localhost:3000/api/eventos", {
+      const response = await fetch(`${API_BASE_URL}/api/eventos`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -211,25 +231,45 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     try {
       const response = await fetch(
-        `http://localhost:3000/api/eventos/${eventId}/relatorio`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${API_BASE_URL}/api/eventos/${eventId}/relatorio`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       if (!response.ok)
         throw new Error(
           (await response.json()).message || "Falha ao buscar dados."
         );
 
-      const { evento, veiculos, estatisticas } = await response.json();
+      const { evento, veiculos } = await response.json();
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
+      const doc = new jsPDF("p", "mm", "a4");
 
       doc.setFontSize(20);
       doc.text("Relatório Final de Evento", 105, 20, { align: "center" });
       doc.setFontSize(12);
       doc.text(`Evento: ${evento.nome_evento}`, 14, 40);
-      // ... (Restante da sua lógica de criação de PDF) ...
+      doc.text(`Local: ${evento.local_evento}`, 14, 47);
+      doc.text(
+        `Data: ${new Date(evento.data_evento).toLocaleDateString("pt-BR")}`,
+        14,
+        54
+      );
+      doc.text(`Descrição: ${evento.descricao || "N/A"}`, 14, 61);
+
       const tableHeaders = [
-        ["Ticket", "Placa", "Entrada", "Saída", "Permanência"],
+        [
+          "Ticket",
+          "Placa",
+          "Modelo",
+          "Cor",
+          "Localização",
+          "Entrada",
+          "Saída",
+          "Permanência",
+          "Entrada por",
+          "Saída por",
+        ],
       ];
       const tableBody = veiculos.map((v) => {
         const entrada = new Date(v.hora_entrada);
@@ -244,17 +284,50 @@ document.addEventListener("DOMContentLoaded", async () => {
         return [
           v.numero_ticket,
           v.placa,
+          v.modelo,
+          v.cor,
+          v.localizacao,
           entrada.toLocaleTimeString("pt-BR"),
           saida ? saida.toLocaleTimeString("pt-BR") : "Estacionado",
           permanencia,
+          v.nome_usuario_entrada || "N/A",
+          v.nome_usuario_saida || "N/A",
         ];
       });
+
       doc.autoTable({
         head: tableHeaders,
         body: tableBody,
-        startY: 95,
+        startY: 70,
         theme: "grid",
+        styles: {
+          fontSize: 7,
+          cellPadding: 1.5,
+          overflow: "linebreak",
+          valign: "middle",
+          halign: "center",
+        },
+        headStyles: {
+          fillColor: [15, 52, 96],
+          textColor: 255,
+          fontSize: 8,
+          fontStyle: "bold",
+          halign: "center",
+        },
+        columnStyles: {
+          0: { cellWidth: 12 },
+          1: { cellWidth: 18 },
+          2: { cellWidth: 22 },
+          3: { cellWidth: 15 },
+          4: { cellWidth: 22 },
+          5: { cellWidth: 18 },
+          6: { cellWidth: 18 },
+          7: { cellWidth: 18 },
+          8: { cellWidth: 22 },
+          9: { cellWidth: 22 },
+        },
       });
+
       doc.save(`Relatorio_${evento.nome_evento.replace(/\s+/g, "_")}.pdf`);
       Swal.close();
     } catch (error) {

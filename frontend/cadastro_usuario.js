@@ -1,5 +1,3 @@
-// frontend/cadastro_usuario.js (VERSÃO FINAL E REALMENTE CORRIGIDA)
-
 document.addEventListener("DOMContentLoaded", () => {
   const registerForm = document.getElementById("registerForm");
   const nomeUsuarioInput = document.getElementById("nome_usuario");
@@ -9,11 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const registerButton = document.getElementById("registerButton");
   const navLink = document.getElementById("navLink");
 
-  // --- LÓGICA DE TOKEN E NAVEGAÇÃO ---
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // Se um usuário (admin) estiver logado, muda o link de navegação
   if (user && token) {
     if (navLink) {
       navLink.textContent = "Voltar para o Dashboard";
@@ -21,7 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // --- FUNÇÃO DE VALIDAÇÃO DE SENHA (sem alterações) ---
   function validatePassword() {
     const senha = senhaInput.value;
     const confirmSenha = confirmSenhaInput.value;
@@ -68,13 +63,11 @@ document.addEventListener("DOMContentLoaded", () => {
     registerButton.disabled = !allRequirementsMet;
   }
 
-  // Adiciona listeners para validação em tempo real
   senhaInput.addEventListener("input", validatePassword);
   confirmSenhaInput.addEventListener("input", validatePassword);
   nomeUsuarioInput.addEventListener("input", validatePassword);
   cargoSelect.addEventListener("change", validatePassword);
 
-  // --- SUBMISSÃO DO FORMULÁRIO (COM A CORREÇÃO) ---
   registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     validatePassword();
@@ -90,13 +83,12 @@ document.addEventListener("DOMContentLoaded", () => {
     registerButton.disabled = true;
 
     try {
-      // --- CORREÇÃO PRINCIPAL AQUI ---
-      // O cabeçalho de autorização agora é adicionado à requisição
-      const response = await fetch("http://localhost:3000/api/auth/register", {
+      // --- ALTERAÇÃO AQUI ---
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ENVIA O TOKEN DO ADMIN
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           nome_usuario: nomeUsuarioInput.value,
@@ -115,9 +107,8 @@ document.addEventListener("DOMContentLoaded", () => {
           timer: 2500,
           showConfirmButton: false,
         });
-        // Limpa o formulário para o admin poder cadastrar outro usuário
         registerForm.reset();
-        validatePassword(); // Reseta a validação visual
+        validatePassword();
       } else {
         Swal.fire({
           icon: "error",

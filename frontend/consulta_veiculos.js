@@ -1,28 +1,13 @@
-// frontend/consulta_veiculos.js (VERSÃO FINAL)
+// Arquivo: consulta_veiculos.js (VERSÃO FINAL E SIMPLIFICADA)
+
 document.addEventListener("DOMContentLoaded", async () => {
-  const searchInput = document.getElementById("searchInput");
-  const statusFilter = document.getElementById("statusFilter");
-  const vehicleList = document.getElementById("vehicleList");
-  const noVehiclesMessage = document.getElementById("noVehiclesMessage");
-  const generatePdfBtn = document.getElementById("generatePdfBtn");
+  // --- BLOCO DE VERIFICAÇÃO SIMPLIFICADO ---
+  const { token, user, activeEventId, activeEventDetails } =
+    verificarAutenticacao();
+  if (!user) return;
+  // --- FIM DO BLOCO ---
 
-  const activeEventNameSpan = document.getElementById("activeEventName");
-  const activeEventLocationSpan = document.getElementById(
-    "activeEventLocation"
-  );
-  const activeEventDateSpan = document.getElementById("activeEventDate");
-
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user"));
-  const activeEventId = localStorage.getItem("activeEventId");
-  const activeEventDetails = JSON.parse(
-    localStorage.getItem("activeEventDetails")
-  );
-
-  if (!token || !user) {
-    window.location.href = "login.html";
-    return;
-  }
+  // Validação de evento ativo
   if (!activeEventId || !activeEventDetails) {
     Swal.fire({
       icon: "warning",
@@ -30,39 +15,66 @@ document.addEventListener("DOMContentLoaded", async () => {
       text: "Por favor, selecione um evento para consultar os veículos.",
       confirmButtonText: "Selecionar Evento",
     }).then(() => {
-      window.location.href = "eventos.html";
+      window.location.href = "dashboard.html";
     });
     return;
   }
 
-  activeEventNameSpan.textContent = activeEventDetails.nome_evento;
-  activeEventLocationSpan.textContent = activeEventDetails.local_evento;
-  activeEventDateSpan.textContent = new Date(
+  const searchInput = document.getElementById("searchInput");
+  const statusFilter = document.getElementById("statusFilter");
+  const vehicleList = document.getElementById("vehicleList");
+  const noVehiclesMessage = document.getElementById("noVehiclesMessage");
+  const generatePdfBtn = document.getElementById("generatePdfBtn");
+
+  document.getElementById("activeEventName").textContent =
+    activeEventDetails.nome_evento;
+  document.getElementById("activeEventLocation").textContent =
+    activeEventDetails.local_evento;
+  document.getElementById("activeEventDate").textContent = new Date(
     activeEventDetails.data_evento
   ).toLocaleDateString("pt-BR");
 
+  let searchTimeout;
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => loadVehicles(), 300);
+  });
+  statusFilter.addEventListener("change", loadVehicles);
+
   async function loadVehicles() {
-    const search = searchInput.value;
+    const search = searchInput.value.trim();
     const status = statusFilter.value;
-    let url = `http://localhost:3000/api/veiculos/evento/${activeEventId}?status=${status}&search=${search}`;
+    const url = `${API_BASE_URL}/api/veiculos/evento/${activeEventId}?status=${status}&search=${search}`;
+
+    vehicleList.innerHTML =
+      '<p class="loading-message">Carregando veículos...</p>';
+    noVehiclesMessage.style.display = "none";
 
     try {
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-
       if (response.ok) {
         vehicleList.innerHTML = "";
         noVehiclesMessage.style.display = data.length === 0 ? "block" : "none";
-
         data.forEach((vehicle) => {
           const vehicleItem = document.createElement("div");
           vehicleItem.classList.add("vehicle-item");
+          const statusClass =
+            vehicle.status === "estacionado"
+              ? "status-estacionado"
+              : "status-saiu";
+          const statusIcon = vehicle.status === "estacionado" ? "🅿️" : "✅";
           vehicleItem.innerHTML = `
-              <h3>Ticket: ${vehicle.numero_ticket} - Placa: ${
+              <div class="vehicle-header">
+                <h3>Ticket: ${vehicle.numero_ticket} - Placa: ${
             vehicle.placa
           }</h3>
+                <span class="status ${statusClass}">${statusIcon} ${vehicle.status
+            .replace("_", " ")
+            .toUpperCase()}</span>
+              </div>
               <p>Modelo: ${vehicle.modelo} | Cor: ${vehicle.cor}</p>
               <p>Localização: ${vehicle.localizacao}</p>
               <p>Entrada: ${new Date(vehicle.hora_entrada).toLocaleString(
@@ -75,9 +87,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                     )}</p>`
                   : ""
               }
-              <p>Status: <span class="status ${vehicle.status}">${vehicle.status
-            .replace("_", " ")
-            .toUpperCase()}</span></p>
+                 ${
+                   vehicle.observacoes
+                     ? `<p class="obs"><strong>Observações:</strong> ${vehicle.observacoes}</p>`
+                     : ""
+                 }
               <p>Registrado por: ${vehicle.nome_usuario_entrada}</p>
               ${
                 vehicle.nome_usuario_saida
@@ -85,15 +99,13 @@ document.addEventListener("DOMContentLoaded", async () => {
                   : ""
               }
               ${
-                vehicle.status === "estacionado"
+                vehicle.status === "estacionado" && user.cargo !== "manobrista"
                   ? `<button class="action-button saida" data-vehicle-id="${vehicle.id}">Registrar Saída</button>`
                   : ""
               }
           `;
           vehicleList.appendChild(vehicleItem);
         });
-
-        // Adiciona listeners DEPOIS de criar os botões
         addSaidaButtonListeners();
       } else {
         Swal.fire(
@@ -103,7 +115,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
       }
     } catch (error) {
-      console.error("Erro de rede:", error);
       Swal.fire(
         "Erro de Conexão",
         "Não foi possível conectar ao servidor.",
@@ -121,15 +132,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           text: "Deseja realmente registrar a saída deste veículo?",
           icon: "warning",
           showCancelButton: true,
-          confirmButtonColor: "#3085d6",
-          cancelButtonColor: "#d33",
           confirmButtonText: "Sim, registrar saída!",
           cancelButtonText: "Cancelar",
         }).then(async (result) => {
           if (result.isConfirmed) {
             try {
               const response = await fetch(
-                `http://localhost:3000/api/veiculos/saida/${vehicleId}`,
+                `${API_BASE_URL}/api/veiculos/saida/${vehicleId}`,
                 {
                   method: "PUT",
                   headers: { Authorization: `Bearer ${token}` },
@@ -159,6 +168,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // ... (O resto do arquivo, como a função de gerar PDF, permanece igual,
+  // mas lembre-se de que a função getVehiclesForPdf também deve usar API_BASE_URL) ...
+
+  async function getVehiclesForPdf() {
+    const search = searchInput.value;
+    const status = statusFilter.value;
+    const url = `${API_BASE_URL}/api/veiculos/evento/${activeEventId}?status=${status}&search=${search}`;
+    try {
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.ok ? await response.json() : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
   generatePdfBtn.addEventListener("click", async () => {
     const vehicles = await getVehiclesForPdf();
     if (vehicles.length === 0) {
@@ -169,7 +195,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
       return;
     }
-
     Swal.fire({
       title: "Gerando PDF...",
       text: "Aguarde enquanto o relatório é criado.",
@@ -214,21 +239,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  async function getVehiclesForPdf() {
-    const search = searchInput.value;
-    const status = statusFilter.value;
-    const url = `http://localhost:3000/api/veiculos/evento/${activeEventId}?status=${status}&search=${search}`;
-    try {
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.ok ? await response.json() : [];
-    } catch (error) {
-      return [];
-    }
-  }
-
-  searchInput.addEventListener("input", loadVehicles);
-  statusFilter.addEventListener("change", loadVehicles);
   loadVehicles();
 });

@@ -1,6 +1,8 @@
-// frontend/components.js (VERSÃO FINAL SIMPLIFICADA)
-
-function setupHeaderLogic() {
+/**
+ * Configura a lógica do cabeçalho, como o botão de logout e as informações do usuário.
+ * @param {object} user - O objeto do usuário logado.
+ */
+function setupHeaderLogic(user) {
   const logoutButton = document.getElementById("logoutButton");
   if (logoutButton) {
     logoutButton.addEventListener("click", () => {
@@ -10,7 +12,7 @@ function setupHeaderLogic() {
   }
 
   const userInfoText = document.getElementById("userInfoText");
-  const user = JSON.parse(localStorage.getItem("user"));
+  // Agora usa o objeto 'user' passado como argumento
   if (user && userInfoText) {
     userInfoText.innerHTML = `Bem-vindo, <span>${user.nome_usuario}</span> (${user.cargo})`;
   }

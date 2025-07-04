@@ -1,17 +1,42 @@
-// frontend/login.js
 document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("loginForm");
   const usernameInput = document.getElementById("username");
   const passwordInput = document.getElementById("password");
-  const errorMessage = document.getElementById("errorMessage"); // Pode ser removido se usar só SweetAlert
 
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const nome_usuario = usernameInput.value;
     const senha = passwordInput.value;
 
+    if (nome_usuario.length < 3 || nome_usuario.length > 30) {
+      Swal.fire({
+        icon: "error",
+        title: "Erro de Login",
+        text: "Nome de usuário deve ter entre 3 e 30 caracteres.",
+      });
+      return;
+    }
+
+    if (senha.length < 6 || senha.length > 60) {
+      Swal.fire({
+        icon: "error",
+        title: "Erro de Login",
+        text: "Senha deve ter entre 6 e 60 caracteres.",
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: "Autenticando...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     try {
-      const response = await fetch("http://localhost:3000/api/auth/login", {
+      // --- ALTERAÇÃO AQUI ---
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nome_usuario, senha }),
@@ -23,7 +48,31 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
 
-        // Alerta de sucesso e redirecionamento
+        try {
+          // --- ALTERAÇÃO AQUI ---
+          const eventoAtivoResponse = await fetch(
+            `${API_BASE_URL}/api/eventos/ativo`,
+            {
+              headers: { Authorization: `Bearer ${data.token}` },
+            }
+          );
+          if (eventoAtivoResponse.ok) {
+            const eventoAtivo = await eventoAtivoResponse.json();
+            if (eventoAtivo) {
+              localStorage.setItem("activeEventId", eventoAtivo.id);
+              localStorage.setItem(
+                "activeEventDetails",
+                JSON.stringify(eventoAtivo)
+              );
+            } else {
+              localStorage.removeItem("activeEventId");
+              localStorage.removeItem("activeEventDetails");
+            }
+          }
+        } catch (e) {
+          console.error("Não foi possível buscar o evento ativo no login.", e);
+        }
+
         Swal.fire({
           icon: "success",
           title: "Login bem-sucedido!",
