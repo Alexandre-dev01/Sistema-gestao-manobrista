@@ -1,22 +1,26 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const { token, user } = verificarAutenticacao();
+  if (!user || user.cargo !== "admin") {
+    // Se não for um admin, exibe um alerta e redireciona para o login.
+    Swal.fire({
+      icon: "error",
+      title: "Acesso Negado",
+      text: "Você não tem permissão para acessar esta página.",
+    }).then(() => {
+      window.location.href = "index.html";
+    });
+    return; // Impede que o resto do script seja executado.
+  }
+  // --- FIM DA MUDANÇA ---
+
   const registerForm = document.getElementById("registerForm");
   const nomeUsuarioInput = document.getElementById("nome_usuario");
   const senhaInput = document.getElementById("senha");
   const confirmSenhaInput = document.getElementById("confirm_senha");
   const cargoSelect = document.getElementById("cargo");
   const registerButton = document.getElementById("registerButton");
-  const navLink = document.getElementById("navLink");
 
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  if (user && token) {
-    if (navLink) {
-      navLink.textContent = "Voltar para o Dashboard";
-      navLink.href = "dashboard.html";
-    }
-  }
-
+  // A lógica de validação de senha permanece a mesma.
   function validatePassword() {
     const senha = senhaInput.value;
     const confirmSenha = confirmSenhaInput.value;
@@ -58,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
       hasNumber &&
       hasSpecial &&
       passwordsMatch &&
-      nomeUsuarioInput.value !== "" &&
+      nomeUsuarioInput.value.trim() !== "" &&
       cargoSelect.value !== "";
     registerButton.disabled = !allRequirementsMet;
   }
@@ -68,22 +72,13 @@ document.addEventListener("DOMContentLoaded", () => {
   nomeUsuarioInput.addEventListener("input", validatePassword);
   cargoSelect.addEventListener("change", validatePassword);
 
+  // A lógica de envio do formulário permanece a mesma.
   registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    validatePassword();
-    if (registerButton.disabled) {
-      Swal.fire({
-        icon: "error",
-        title: "Campos Inválidos",
-        text: "Por favor, preencha todos os campos e atenda aos requisitos da senha.",
-      });
-      return;
-    }
-
+    if (registerButton.disabled) return;
     registerButton.disabled = true;
 
     try {
-      // --- ALTERAÇÃO AQUI ---
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: {
@@ -117,11 +112,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
     } catch (error) {
-      console.error("Erro de rede ao cadastrar usuário:", error);
       Swal.fire({
         icon: "error",
         title: "Erro de Conexão",
-        text: "Não foi possível conectar ao servidor. Tente novamente.",
+        text: "Não foi possível conectar ao servidor.",
       });
     } finally {
       registerButton.disabled = false;
