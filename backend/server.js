@@ -14,13 +14,13 @@ const veiculosRoutes = require("./routes/veiculosRoutes");
 
 const app = express();
 
-// --- ALTERAÇÃO FINAL AQUI (CONFIGURAÇÃO DO CORS) ---
+// --- CONFIGURAÇÃO FINAL DO CORS PARA PRODUÇÃO ---
 app.use(
   cors({
-    origin: "https://jade-puppy-cbd850.netlify.app", // <-- COLE A SUA URL DA NETLIFY AQUI
+    origin: "https://jade-puppy-cbd850.netlify.app", // Permite requisições apenas do seu site Netlify
   })
 );
-// --- FIM DA ALTERAÇÃO ---
+// --- FIM DA CONFIGURAÇÃO ---
 
 app.use(express.json());
 
@@ -29,7 +29,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/eventos", eventosRoutes);
 app.use("/api/veiculos", veiculosRoutes);
 
-// --- ROTAS DE TESTE ---
+// --- ROTA DE TESTE ---
 app.get("/", (req, res) => {
   res.send("API do Sistema de Manobrista está funcionando!");
 });
@@ -42,4 +42,5 @@ if (require.main === module) {
   });
 }
 
+// Exporta o 'app' para que os testes possam usá-lo
 module.exports = app;
