@@ -9,8 +9,15 @@ router.post(
   auth,
   authorize("admin", "orientador", "manobrista"),
   async (req, res) => {
-    const { evento_id, numero_ticket, modelo, cor, placa, localizacao } =
-      req.body;
+    const {
+      evento_id,
+      numero_ticket,
+      modelo,
+      cor,
+      placa,
+      localizacao,
+      observacoes,
+    } = req.body;
     const usuario_entrada_id = req.user.id;
 
     // --- INÍCIO DA DEPURACAO (MANTIDO PARA VERIFICAR A LIMPEZA) ---
@@ -26,10 +33,7 @@ router.post(
       "tamanho da placa (original):",
       placa ? placa.length : "null/undefined"
     );
-    // --- FIM DA DEPURACAO ---
 
-    // --- CORREÇÃO: Limpar a string da placa antes da validação ---
-    // Garante que a placa é uma string e remove qualquer caractere não alfanumérico
     const cleanedPlaca = String(placa)
       .replace(/[^a-zA-Z0-9]/g, "")
       .toUpperCase();
@@ -116,6 +120,11 @@ router.post(
         .status(400)
         .json({ message: "Localização contém caracteres inválidos." });
     }
+    if (observacoes && observacoes.length > 255) {
+      return res
+        .status(400)
+        .json({ message: "Observações não podem exceder 255 caracteres." });
+    }
 
     // --- FIM DAS VALIDAÇÕES DE REGRA DE NEGÓCIO ---
 
@@ -133,16 +142,17 @@ router.post(
 
       const hora_entrada = new Date();
       const [result] = await pool.query(
-        "INSERT INTO veiculos (evento_id, numero_ticket, modelo, cor, placa, localizacao, hora_entrada, usuario_entrada_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO veiculos (evento_id, numero_ticket, modelo, cor, placa, localizacao, hora_entrada, usuario_entrada_id, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           evento_id,
           numero_ticket,
           modelo,
           cor,
-          cleanedPlaca, // Insere a placa limpa no banco de dados
+          cleanedPlaca,
           localizacao,
           hora_entrada,
           usuario_entrada_id,
+          observacoes || null, // Se observacoes for uma string vazia, insere NULL no banco
         ]
       );
       res.status(201).json({

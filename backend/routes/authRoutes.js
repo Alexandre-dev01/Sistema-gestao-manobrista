@@ -95,6 +95,12 @@ router.post("/register", auth, authorize("admin"), async (req, res) => {
 router.post("/login", async (req, res) => {
   const { nome_usuario, senha } = req.body;
 
+  // --- LOGS DE DEPURAÇÃO ---
+  console.log("\n--- INICIANDO TESTE DE LOGIN ---");
+  console.log("Recebido nome_usuario:", nome_usuario);
+  console.log("Recebida senha:", senha);
+  // --- FIM DOS LOGS ---
+
   if (!nome_usuario || !senha) {
     return res
       .status(400)
@@ -109,10 +115,27 @@ router.post("/login", async (req, res) => {
     const user = users[0];
 
     if (!user) {
+      // --- LOG DE DEPURAÇÃO ---
+      console.log("Resultado da busca no DB: Usuário NÃO encontrado.");
+      // --- FIM DO LOG ---
       return res.status(401).json({ message: "Credenciais inválidas." });
     }
 
+    // --- LOG DE DEPURAÇÃO ---
+    console.log(
+      "Resultado da busca no DB: Usuário encontrado:",
+      user.nome_usuario,
+      "ID:",
+      user.id
+    );
+    // --- FIM DO LOG ---
+
     const isMatch = await bcrypt.compare(senha, user.senha);
+
+    // --- LOG DE DEPURAÇÃO ---
+    console.log("Resultado da comparação de senha (isMatch):", isMatch);
+    console.log("--- FIM DO TESTE DE LOGIN ---\n");
+    // --- FIM DO LOG ---
 
     if (!isMatch) {
       return res.status(401).json({ message: "Credenciais inválidas." });
@@ -121,7 +144,7 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign(
       { id: user.id, cargo: user.cargo },
       process.env.JWT_SECRET,
-      { expiresIn: "8h" } // Aumentei a duração do token
+      { expiresIn: "8h" }
     );
 
     res.status(200).json({
