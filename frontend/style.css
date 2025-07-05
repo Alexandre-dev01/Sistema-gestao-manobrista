@@ -1030,3 +1030,177 @@ input[type="time"]::-moz-focus-inner {
     right: 15px;
   }
 }
+:root {
+  --cor-primaria: #0f3460;
+  --cor-secundaria: #1a1a2e;
+  --cor-accent: #ff5722;
+  --cor-texto-principal: #e0e0e0;
+  --cor-texto-secundario: #b0b0b0;
+  --cor-borda-card: #2c3e50;
+  --cor-sucesso: #2ecc71;
+}
+
+body {
+  font-family: "Poppins", Arial, sans-serif;
+}
+
+main {
+  padding: 30px 20px;
+  max-width: 1100px;
+}
+
+/* --- 2. CARD DE EVENTO ATIVO (PADRONIZADO E RESPONSIVO) --- */
+.active-event-card {
+  background: linear-gradient(135deg, #164a86, var(--cor-primaria));
+  border-left: 5px solid var(--cor-accent);
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  margin-bottom: 25px;
+}
+
+.active-event-card h2 {
+  color: #ffffff;
+  font-size: 1.6em;
+  margin-top: 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.active-event-card .icon-title {
+  color: var(--cor-accent);
+}
+
+.event-details-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Padrão: 1 coluna para mobile */
+  gap: 12px;
+}
+
+.event-details-grid p {
+  font-size: 1.1em;
+  margin: 0;
+  color: #d0d0d0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.event-details-grid p strong {
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 90px;
+}
+
+.event-details-grid p i {
+  color: var(--cor-accent);
+  width: 20px;
+  text-align: center;
+}
+
+/* --- 3. RESPONSIVIDADE DO CARD E OUTROS ELEMENTOS --- */
+/* Para telas maiores, o card do evento fica com 2 colunas */
+@media screen and (min-width: 768px) {
+  .event-details-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .container {
+    padding: 30px; /* Aumenta o padding em telas maiores */
+  }
+}
+
+/* Ajustes no header e user-info para mobile */
+.user-info strong {
+  display: inline; /* Garante que o nome não quebre linha no mobile */
+}
+
+/* --- 4. MELHORIAS NOS CARDS DO DASHBOARD --- */
+.card {
+  border: 1px solid var(--cor-borda-card);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-5px);
+  border-color: var(--cor-accent);
+}
+.card .card-icon {
+  font-size: 2.2rem;
+  color: var(--cor-accent);
+  margin-bottom: 15px;
+  display: block;
+}
+.card p {
+  line-height: 1.5;
+}
+
+/* --- 5. MELHORIA NOS BOTÕES E INPUTS --- */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--cor-accent) !important;
+  box-shadow: 0 0 8px rgba(255, 87, 34, 0.5) !important;
+}
+
+/* --- 6. CORREÇÃO DO MODAL DE SELEÇÃO DE EVENTOS --- */
+.modal-event-item {
+  padding: 15px;
+  border-bottom: 1px solid #2c3e50;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-left-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  border-left: 4px solid transparent;
+}
+.modal-event-item:hover {
+  background-color: #1a1a2e;
+}
+.modal-event-item.selected {
+  background-color: #007bff20;
+  border-left-color: var(--cor-accent);
+}
+.event-item-main-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.event-item-name {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #fff;
+}
+.event-item-location {
+  font-size: 0.9em;
+  color: var(--cor-texto-secundario);
+  font-style: italic;
+}
+.event-item-sub-info {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 15px;
+  font-size: 0.9em;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.event-item-sub-info span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

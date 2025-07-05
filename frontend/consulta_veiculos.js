@@ -1,38 +1,29 @@
-// Arquivo: consulta_veiculos.js (VERSÃO FINAL E SIMPLIFICADA)
-
 document.addEventListener("DOMContentLoaded", async () => {
-  // --- BLOCO DE VERIFICAÇÃO SIMPLIFICADO ---
   const { token, user, activeEventId, activeEventDetails } =
     verificarAutenticacao();
   if (!user) return;
-  // --- FIM DO BLOCO ---
 
-  // Validação de evento ativo
   if (!activeEventId || !activeEventDetails) {
     Swal.fire({
       icon: "warning",
       title: "Nenhum Evento Ativo",
       text: "Por favor, selecione um evento para consultar os veículos.",
-      confirmButtonText: "Selecionar Evento",
+      confirmButtonText: "Ir para Dashboard",
     }).then(() => {
       window.location.href = "dashboard.html";
     });
     return;
   }
 
+  // Renderiza o card de evento padronizado
+  // Certifique-se de que 'activeEventDetails' contém as propriedades 'hora_inicio', 'hora_fim', 'data_fim'
+  renderActiveEventCard(activeEventDetails, "eventInfoDisplay"); // ID do container no HTML
+
   const searchInput = document.getElementById("searchInput");
   const statusFilter = document.getElementById("statusFilter");
   const vehicleList = document.getElementById("vehicleList");
   const noVehiclesMessage = document.getElementById("noVehiclesMessage");
   const generatePdfBtn = document.getElementById("generatePdfBtn");
-
-  document.getElementById("activeEventName").textContent =
-    activeEventDetails.nome_evento;
-  document.getElementById("activeEventLocation").textContent =
-    activeEventDetails.local_evento;
-  document.getElementById("activeEventDate").textContent = new Date(
-    activeEventDetails.data_evento
-  ).toLocaleDateString("pt-BR");
 
   let searchTimeout;
   searchInput.addEventListener("input", () => {
@@ -87,11 +78,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                     )}</p>`
                   : ""
               }
-                 ${
-                   vehicle.observacoes
-                     ? `<p class="obs"><strong>Observações:</strong> ${vehicle.observacoes}</p>`
-                     : ""
-                 }
+              ${
+                vehicle.observacoes
+                  ? `<p class="obs"><strong>Observações:</strong> ${vehicle.observacoes}</p>`
+                  : ""
+              }
               <p>Registrado por: ${vehicle.nome_usuario_entrada}</p>
               ${
                 vehicle.nome_usuario_saida
@@ -167,9 +158,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     });
   }
-
-  // ... (O resto do arquivo, como a função de gerar PDF, permanece igual,
-  // mas lembre-se de que a função getVehiclesForPdf também deve usar API_BASE_URL) ...
 
   async function getVehiclesForPdf() {
     const search = searchInput.value;

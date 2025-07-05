@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/imask"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <header>
@@ -26,11 +34,15 @@
     <main>
       <div class="container">
         <h1>Registrar Entrada de Veículo</h1>
-        <div id="eventInfoDisplay" class="event-info-display">
-          <p>Evento Ativo: <span id="activeEventName">Nenhum</span></p>
-          <p>Local: <span id="activeEventLocation">Nenhum</span></p>
-          <p>Data: <span id="activeEventDate">Nenhum</span></p>
+        <!-- NOVO HTML PARA O CARD DE EVENTO ATIVO -->
+        <div
+          id="eventInfoDisplay"
+          class="active-event-card"
+          style="display: none"
+        >
+          <!-- Conteúdo será gerado pelo JavaScript (renderActiveEventCard ) -->
         </div>
+        <!-- FIM NOVO HTML -->
 
         <form id="entradaVeiculoForm" autocomplete="off">
           <div class="form-group">

@@ -1,42 +1,33 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // --- BLOCO DE VERIFICAÇÃO SIMPLIFICADO ---
   const { token, user, activeEventId, activeEventDetails } =
     verificarAutenticacao();
-  if (!user) return; // Para a execução
-  // --- FIM DO BLOCO ---
+  if (!user) return;
 
   const entradaVeiculoForm = document.getElementById("entradaVeiculoForm");
   if (!entradaVeiculoForm) return;
 
-  // Validação de evento ativo
   if (!activeEventId || !activeEventDetails) {
     Swal.fire({
       icon: "warning",
       title: "Nenhum Evento Ativo",
       text: "Por favor, selecione um evento antes de registrar um veículo.",
-      confirmButtonText: "Selecionar Evento",
+      confirmButtonText: "Ir para Dashboard",
     }).then(() => {
       window.location.href = "dashboard.html";
     });
     return;
   }
 
-  // --- ALTERAÇÃO 1: Selecionar o novo campo ---
+  // Renderiza o card de evento padronizado
+  // Certifique-se de que 'activeEventDetails' contém as propriedades 'hora_inicio', 'hora_fim', 'data_fim'
+  renderActiveEventCard(activeEventDetails, "eventInfoDisplay"); // ID do container no HTML
+
   const numeroTicketInput = document.getElementById("numeroTicket");
   const modeloCarroInput = document.getElementById("modeloCarro");
   const corCarroInput = document.getElementById("corCarro");
   const placaCarroInput = document.getElementById("placaCarro");
   const localizacaoCarroInput = document.getElementById("localizacaoCarro");
-  const observacoesCarroInput = document.getElementById("observacoesCarro"); // NOVO CAMPO
-  // --- FIM DA ALTERAÇÃO 1 ---
-
-  document.getElementById("activeEventName").textContent =
-    activeEventDetails.nome_evento;
-  document.getElementById("activeEventLocation").textContent =
-    activeEventDetails.local_evento;
-  document.getElementById("activeEventDate").textContent = new Date(
-    activeEventDetails.data_evento
-  ).toLocaleDateString("pt-BR");
+  const observacoesCarroInput = document.getElementById("observacoesCarro");
 
   const placaMask = IMask(placaCarroInput, {
     mask: "AAA-0*00",
@@ -56,7 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const submitButton = e.target.querySelector('button[type="submit"]');
     submitButton.disabled = true;
 
-    // --- ALTERAÇÃO 2: Incluir o valor do novo campo no objeto a ser enviado ---
     const veiculo = {
       evento_id: activeEventId,
       numero_ticket: numeroTicketInput.value,
@@ -64,9 +54,8 @@ document.addEventListener("DOMContentLoaded", () => {
       cor: corCarroInput.value,
       placa: placaMask.unmaskedValue,
       localizacao: localizacaoCarroInput.value,
-      observacoes: observacoesCarroInput.value, // NOVO CAMPO
+      observacoes: observacoesCarroInput.value,
     };
-    // --- FIM DA ALTERAÇÃO 2 ---
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/veiculos/entrada`, {

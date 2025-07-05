@@ -4,12 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard - Sistema de Manobrista</title>
-    <link rel="stylesheet" href="style.css" />
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
     />
   </head>
   <body>
@@ -31,45 +46,48 @@
     <main>
       <div
         id="activeEventDisplay"
-        class="event-info-display active-event-card"
+        class="active-event-card"
         style="display: none"
       >
-        <h2>Evento Ativo</h2>
+        <h2><i class="fas fa-calendar-check"></i> Evento Ativo</h2>
         <p><strong>Nome:</strong> <span id="activeEventName"></span></p>
         <p><strong>Local:</strong> <span id="activeEventLocation"></span></p>
         <p><strong>Data:</strong> <span id="activeEventDate"></span></p>
         <p><strong>Horário:</strong> <span id="activeEventTime"></span></p>
-        <p><strong>Término:</strong> <span id="activeEventEndDate"></span></p>
+        <p style="display: none">
+          <strong>Término:</strong> <span id="activeEventEndDate"></span>
+        </p>
       </div>
 
-      <button
-        id="changeEventBtn"
-        class="btn-primary"
-        style="margin-bottom: 20px"
-      >
-        Selecionar/Trocar Evento Ativo
+      <button id="changeEventBtn" class="btn-primary">
+        <i class="fas fa-exchange-alt"></i> Selecionar/Trocar Evento Ativo
       </button>
 
       <div id="statsContainer" class="stats-grid" style="display: none"></div>
 
       <div class="card-container">
         <div class="card" id="cardEventos">
+          <i class="fas fa-calendar-alt card-icon"></i>
           <h2>Gerenciar Eventos</h2>
           <p>Crie, ative e gere relatórios.</p>
         </div>
         <div class="card" id="cardRegistrarEntrada">
+          <i class="fas fa-sign-in-alt card-icon"></i>
           <h2>Registrar Entrada</h2>
           <p>Adicione novos veículos.</p>
         </div>
         <div class="card" id="cardConsultaVeiculos">
+          <i class="fas fa-search-location card-icon"></i>
           <h2>Consultar Veículos</h2>
           <p>Busque carros e registre saídas.</p>
         </div>
         <div class="card" id="cardRegistroMassa">
+          <i class="fas fa-car-side card-icon"></i>
           <h2>Registro em Massa</h2>
           <p>Registre múltiplos veículos.</p>
         </div>
         <div class="card" id="cardCadastrarUsuario">
+          <i class="fas fa-user-plus card-icon"></i>
           <h2>Cadastrar Usuário</h2>
           <p>Adicione novos usuários.</p>
         </div>

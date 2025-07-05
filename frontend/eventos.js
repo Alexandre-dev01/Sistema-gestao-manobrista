@@ -1,24 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // --- BLOCO DE VERIFICAÇÃO (sem alterações) ---
   const { token, user } = verificarAutenticacao();
   if (!user) return;
 
-  // --- SELEÇÃO DE ELEMENTOS ---
   const createEventForm = document.getElementById("createEventForm");
   const nomeEventoInput = document.getElementById("nomeEvento");
   const dataEventoInput = document.getElementById("dataEvento");
-
-  // Certifique-se de que estas linhas estão presentes e corretas:
   const horaInicioEventoInput = document.getElementById("horaInicioEvento");
   const horaFimEventoInput = document.getElementById("horaFimEvento");
-  const dataFimEventoInput = document.getElementById("dataFimEvento"); // ESTA LINHA É A QUE ESTAVA FALTANDO OU ESTAVA NO LUGAR ERRADO
-
+  const dataFimEventoInput = document.getElementById("dataFimEvento");
   const localEventoInput = document.getElementById("localEvento");
   const descricaoEventoInput = document.getElementById("descricaoEvento");
   const eventsContainer = document.getElementById("eventsContainer");
   const noEventsMessage = document.getElementById("noEventsMessage");
 
-  // --- FUNÇÃO PARA CARREGAR EVENTOS ---
   async function loadEvents() {
     eventsContainer.innerHTML = "<p>Carregando eventos...</p>";
     noEventsMessage.style.display = "none";
@@ -80,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
               </div>`;
           eventsContainer.appendChild(eventItem);
         });
-        addEventListeners(); // Adiciona os listeners aos botões recém-criados
+        addEventListeners();
       } else {
         Swal.fire(
           "Erro!",
@@ -97,9 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // --- FUNÇÃO PARA ADICIONAR LISTENERS AOS BOTÕES ---
   function addEventListeners() {
-    // Listener para "Definir como Ativo" (sem alterações)
     document.querySelectorAll(".set-active-btn").forEach((button) => {
       button.addEventListener("click", async (e) => {
         const eventId = e.target.dataset.eventId;
@@ -130,10 +122,8 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // Listener para o botão "DESATIVAR"
     document.querySelectorAll(".deactivate-event-btn").forEach((button) => {
       button.addEventListener("click", async (e) => {
-        // const eventId = e.target.dataset.eventId; // Não é necessário enviar o ID para a rota /desativar
         Swal.fire({
           title: "Desativar Evento?",
           text: "Isso removerá o evento ativo, mas não excluirá nenhum dado.",
@@ -155,22 +145,18 @@ document.addEventListener("DOMContentLoaded", () => {
               );
               const data = await response.json();
               if (!response.ok) {
-                // Se o backend retornar 404 com mensagem "Nenhum evento ativo para desativar."
-                // podemos tratar como sucesso ou informação, dependendo da UX desejada.
-                // Aqui, vamos tratar como erro se não for 200 OK.
                 throw new Error(data.message || "Erro ao desativar evento.");
               }
 
-              // Limpa o evento ativo do armazenamento local
               localStorage.removeItem("activeEventId");
               localStorage.removeItem("activeEventDetails");
 
               Swal.fire(
                 "Desativado!",
-                data.message || "O evento foi desativado com sucesso.", // Usa a mensagem do backend
+                data.message || "O evento foi desativado com sucesso.",
                 "success"
               );
-              loadEvents(); // Recarrega a lista para refletir a mudança
+              loadEvents();
             } catch (error) {
               Swal.fire("Erro!", error.message, "error");
             }
@@ -252,7 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
       data_evento: dataEventoInput.value,
       hora_inicio: horaInicioEventoInput.value,
       hora_fim: horaFimEventoInput.value,
-      data_fim: dataFimEventoInput.value, // AQUI É ONDE ESTAVA DANDO O ERRO DE REFERÊNCIA
+      data_fim: dataFimEventoInput.value,
       local_evento: localEventoInput.value,
       descricao: descricaoEventoInput.value,
     };
@@ -315,8 +301,8 @@ document.addEventListener("DOMContentLoaded", () => {
         14,
         54
       );
-      doc.text(`Horário: ${evento.hora_inicio} - ${evento.hora_fim}`, 14, 61); // NOVO
-      doc.text(`Descrição: ${evento.descricao || "N/A"}`, 14, 68); // Ajustar Y
+      doc.text(`Horário: ${evento.hora_inicio} - ${evento.hora_fim}`, 14, 61);
+      doc.text(`Descrição: ${evento.descricao || "N/A"}`, 14, 68);
 
       const tableHeaders = [
         [
