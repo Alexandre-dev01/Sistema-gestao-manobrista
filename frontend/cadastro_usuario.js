@@ -1,7 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // --- GUARDA DE ACESSO REFORÇADO ---
+  // Esta lógica garante que apenas um admin logado pode usar esta página.
   const { token, user } = verificarAutenticacao();
   if (!user || user.cargo !== "admin") {
-    // Se não for um admin, exibe um alerta e redireciona para o login.
     Swal.fire({
       icon: "error",
       title: "Acesso Negado",
@@ -9,10 +10,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }).then(() => {
       window.location.href = "index.html";
     });
-    return; // Impede que o resto do script seja executado.
+    return; // Impede a execução do resto do código se não for admin.
   }
-  // --- FIM DA MUDANÇA ---
+  // --- FIM DA PROTEÇÃO ---
 
+  // Seleção dos elementos do formulário
   const registerForm = document.getElementById("registerForm");
   const nomeUsuarioInput = document.getElementById("nome_usuario");
   const senhaInput = document.getElementById("senha");
@@ -20,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const cargoSelect = document.getElementById("cargo");
   const registerButton = document.getElementById("registerButton");
 
-  // A lógica de validação de senha permanece a mesma.
+  // A lógica de validação da senha não precisa de alterações.
   function validatePassword() {
     const senha = senhaInput.value;
     const confirmSenha = confirmSenhaInput.value;
@@ -67,23 +69,27 @@ document.addEventListener("DOMContentLoaded", () => {
     registerButton.disabled = !allRequirementsMet;
   }
 
+  // Adiciona os listeners para validar em tempo real.
   senhaInput.addEventListener("input", validatePassword);
   confirmSenhaInput.addEventListener("input", validatePassword);
   nomeUsuarioInput.addEventListener("input", validatePassword);
   cargoSelect.addEventListener("change", validatePassword);
 
-  // A lógica de envio do formulário permanece a mesma.
+  // Lógica de envio do formulário.
   registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (registerButton.disabled) return;
     registerButton.disabled = true;
 
     try {
+      // --- CORREÇÃO AQUI ---
+      // A requisição fetch agora usa o 'token' que foi validado no início do script,
+      // garantindo que a autorização do admin seja enviada corretamente para a API.
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`, // Garante que o token do admin seja enviado.
         },
         body: JSON.stringify({
           nome_usuario: nomeUsuarioInput.value,

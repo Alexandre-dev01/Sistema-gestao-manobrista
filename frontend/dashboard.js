@@ -1,31 +1,26 @@
-// Arquivo: dashboard.js (VERSÃO FINAL E SIMPLIFICADA)
-
 document.addEventListener("DOMContentLoaded", () => {
-  // --- BLOCO DE VERIFICAÇÃO SIMPLIFICADO ---
   const {
     token,
     user,
     activeEventDetails: initialActiveEventDetails,
   } = verificarAutenticacao();
-  if (!user) return; // Para a execução se o usuário não for autenticado
-  // --- FIM DO BLOCO ---
+  if (!user) return;
 
-  // Permite que a variável seja atualizada depois
   let activeEventDetails = initialActiveEventDetails;
 
-  // --- ELEMENTOS DA PÁGINA ---
   const activeEventDisplay = document.getElementById("activeEventDisplay");
   const activeEventNameSpan = document.getElementById("activeEventName");
   const activeEventLocationSpan = document.getElementById(
     "activeEventLocation"
   );
   const activeEventDateSpan = document.getElementById("activeEventDate");
+  const activeEventTimeSpan = document.getElementById("activeEventTime");
+  const activeEventEndDateSpan = document.getElementById("activeEventEndDate");
   const changeEventBtn = document.getElementById("changeEventBtn");
   const statsContainer = document.getElementById("statsContainer");
 
   const cards = {
     eventos: document.getElementById("cardEventos"),
-    relatorios: document.getElementById("cardRelatorios"),
     registrarEntrada: document.getElementById("cardRegistrarEntrada"),
     consultaVeiculos: document.getElementById("cardConsultaVeiculos"),
     registroMassa: document.getElementById("cardRegistroMassa"),
@@ -55,7 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
         break;
       case "orientador":
         if (cards.eventos) cards.eventos.style.display = "block";
-        if (cards.relatorios) cards.relatorios.style.display = "block";
         if (cards.registrarEntrada)
           cards.registrarEntrada.style.display = "block";
         if (cards.consultaVeiculos)
@@ -113,11 +107,37 @@ document.addEventListener("DOMContentLoaded", () => {
     activeEventDetails = JSON.parse(localStorage.getItem("activeEventDetails"));
     if (activeEventDetails) {
       activeEventDisplay.style.display = "block";
-      activeEventNameSpan.textContent = activeEventDetails.nome_evento;
-      activeEventLocationSpan.textContent = activeEventDetails.local_evento;
-      activeEventDateSpan.textContent = new Date(
+      activeEventNameSpan.innerHTML = `<i class="fas fa-calendar-check"></i> ${activeEventDetails.nome_evento}`; // Ícone opcional
+      activeEventLocationSpan.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${activeEventDetails.local_evento}`; // Ícone opcional
+      activeEventDateSpan.innerHTML = `<i class="fas fa-calendar-alt"></i> ${new Date(
         activeEventDetails.data_evento
-      ).toLocaleDateString("pt-BR");
+      ).toLocaleDateString("pt-BR")}`; // Ícone opcional
+      // Exibe hora de início e fim
+      let timeString = "";
+      if (activeEventDetails.hora_inicio && activeEventDetails.hora_fim) {
+        timeString = `${activeEventDetails.hora_inicio} - ${activeEventDetails.hora_fim}`;
+      } else if (activeEventDetails.hora_inicio) {
+        timeString = `A partir de ${activeEventDetails.hora_inicio}`;
+      } else if (activeEventDetails.hora_fim) {
+        timeString = `Até ${activeEventDetails.hora_fim}`;
+      }
+      activeEventTimeSpan.innerHTML = `<i class="fas fa-clock"></i> ${
+        timeString || "N/A"
+      }`; // Ícone opcional
+
+      // Exibe data de término se existir
+      if (
+        activeEventDetails.data_fim &&
+        activeEventDetails.data_fim !== activeEventDetails.data_evento
+      ) {
+        activeEventEndDateSpan.innerHTML = `<i class="fas fa-calendar-times"></i> ${new Date(
+          activeEventDetails.data_fim
+        ).toLocaleDateString("pt-BR")}`; // Ícone opcional
+        activeEventEndDateSpan.parentElement.style.display = "block"; // Mostra o parágrafo
+      } else {
+        activeEventEndDateSpan.parentElement.style.display = "none"; // Esconde o parágrafo
+      }
+
       loadStats();
     } else {
       activeEventDisplay.style.display = "none";
@@ -144,9 +164,24 @@ document.addEventListener("DOMContentLoaded", () => {
       events.forEach((event) => {
         const eventItem = document.createElement("div");
         eventItem.className = "modal-event-item";
-        eventItem.textContent = `${event.nome_evento} (${
+        // Formata a string de exibição do evento no modal
+        let eventDisplayString = `${event.nome_evento} (${
           event.local_evento
         }) - ${new Date(event.data_evento).toLocaleDateString("pt-BR")}`;
+        if (event.hora_inicio && event.hora_fim) {
+          eventDisplayString += ` | ${event.hora_inicio} - ${event.hora_fim}`;
+        } else if (event.hora_inicio) {
+          eventDisplayString += ` | Início: ${event.hora_inicio}`;
+        } else if (event.hora_fim) {
+          eventDisplayString += ` | Fim: ${event.hora_fim}`;
+        }
+        if (event.data_fim && event.data_fim !== event.data_evento) {
+          eventDisplayString += ` | Término: ${new Date(
+            event.data_fim
+          ).toLocaleDateString("pt-BR")}`;
+        }
+
+        eventItem.textContent = eventDisplayString;
         eventItem.dataset.eventDetails = JSON.stringify(event);
         if (event.is_active) {
           eventItem.classList.add("selected");
@@ -207,7 +242,6 @@ document.addEventListener("DOMContentLoaded", () => {
       cards[key].addEventListener("click", () => {
         const pageMap = {
           eventos: "eventos.html",
-          relatorios: "eventos.html",
           registrarEntrada: "entrada_veiculo.html",
           consultaVeiculos: "consulta_veiculos.html",
           registroMassa: "registro_massa_veiculos.html",

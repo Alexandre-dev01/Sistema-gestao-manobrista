@@ -1,26 +1,27 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // --- BLOCO DE VERIFICAÇÃO SIMPLIFICADO (sem alterações) ---
   const { token, user, activeEventId, activeEventDetails } =
     verificarAutenticacao();
-  if (!user) return;
-
-  if (!activeEventId || !activeEventDetails) {
+  if (!user || !activeEventId) {
+    document.querySelector("main").style.display = "none";
     Swal.fire({
       icon: "warning",
       title: "Nenhum Evento Ativo",
-      text: "Por favor, selecione um evento antes de usar o registro em massa.",
-      confirmButtonText: "Selecionar Evento",
-    }).then(() => (window.location.href = "dashboard.html"));
+      text: "Por favor, selecione um evento no dashboard antes de continuar.",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    }).then(() => {
+      window.location.href = "dashboard.html";
+    });
     return;
   }
 
-  // --- SELEÇÃO DE ELEMENTOS (sem alterações) ---
-  const generateTableBtn = document.getElementById("generateTableBtn");
-  const ticketCountInput = document.getElementById("ticketCount");
+  const addRowsBtn = document.getElementById("addRowsBtn");
+  const addRowCountInput = document.getElementById("addRowCount");
   const vehiclesTableBody = document.getElementById("vehiclesTableBody");
   const massRegisterForm = document.getElementById("massRegisterForm");
   const generatePdfBtn = document.getElementById("generatePdfBtn");
   const searchInput = document.getElementById("searchInput");
+  const clearEmptyRowsBtn = document.getElementById("clearEmptyRowsBtn");
 
   document.getElementById("activeEventName").textContent =
     activeEventDetails.nome_evento;
@@ -37,237 +38,439 @@ document.addEventListener("DOMContentLoaded", () => {
     prepare: (str) => str.toUpperCase(),
   };
 
-  // --- CORREÇÃO 1: FUNÇÃO DE VALIDAÇÃO COMPLETA E ROBUSTA ---
-  // Esta função agora é completa e lida com todos os casos de validação.
-  function validateField(inputElement, rule) {
-    const value = inputElement.value.trim();
-    inputElement.classList.remove("invalid-field");
-    inputElement.title = "";
+  const createRow = (vehicle = {}) => {
+    const newRow = document.createElement("tr");
+    const isSaved = !!vehicle.id;
+    newRow.dataset.id = vehicle.id || "";
+    newRow.dataset.ticket = vehicle.numero_ticket || "";
+    if (isSaved) newRow.classList.add("saved-row");
 
-    // Campos opcionais são válidos se estiverem vazios.
-    if (rule === "observacoes" && value === "") {
-      return true;
-    }
-
-    // Campos obrigatórios não podem ser vazios.
-    if (rule !== "observacoes" && value === "") {
-      inputElement.classList.add("invalid-field");
-      inputElement.title = "Este campo é obrigatório.";
-      return false;
-    }
-
-    let isValid = true;
-    let errorMessage = "";
-
-    switch (rule) {
-      case "ticket":
-        if (value.length < 1 || value.length > 10) {
-          isValid = false;
-          errorMessage = "Ticket deve ter entre 1 e 10 caracteres.";
-        }
-        break;
-      case "modelo":
-        if (value.length < 2 || value.length > 50) {
-          isValid = false;
-          errorMessage = "Modelo deve ter entre 2 e 50 caracteres.";
-        }
-        break;
-      case "cor":
-        if (value.length < 2 || value.length > 20) {
-          isValid = false;
-          errorMessage = "Cor deve ter entre 2 e 20 caracteres.";
-        }
-        break;
-      case "placa":
-        const unmaskedPlaca = value.replace(/[^a-zA-Z0-9]/g, "");
-        if (unmaskedPlaca.length !== 7) {
-          isValid = false;
-          errorMessage = "A placa deve conter 7 caracteres.";
-        }
-        break;
-      case "localizacao":
-        if (value.length < 1 || value.length > 50) {
-          isValid = false;
-          errorMessage = "Localização deve ter entre 1 e 50 caracteres.";
-        }
-        break;
-      case "observacoes":
-        if (value.length > 255) {
-          isValid = false;
-          errorMessage = "Observações não podem exceder 255 caracteres.";
-        }
-        break;
-    }
-
-    if (!isValid) {
-      inputElement.classList.add("invalid-field");
-      inputElement.title = errorMessage;
-    }
-    return isValid;
-  }
-
-  const generateTable = () => {
-    // ... (Função sem alterações)
-    const count = parseInt(ticketCountInput.value, 10);
-    if (isNaN(count) || count <= 0) return;
-    vehiclesTableBody.innerHTML = "";
-    for (let i = 1; i <= count; i++) {
-      const number = i.toString().padStart(2, "0");
-      const newRow = document.createElement("tr");
-      newRow.innerHTML = `
-            <td class="prisma-cell">${number}</td>
-            <td><input type="text" class="ticket-input" value="${number}" readonly></td>
-            <td><input type="text" class="modelo-input" placeholder="Modelo"></td>
-            <td><input type="text" class="cor-input" placeholder="Cor"></td>
-            <td><input type="text" class="placa-input" placeholder="Placa"></td>
-            <td><input type="text" class="localizacao-input" placeholder="Localização"></td>
-            <td><input type="text" class="observacoes-input" placeholder="Observações (opcional)"></td>
+    newRow.innerHTML = `
+            <td class="prisma-cell">${vehicle.numero_ticket || ""}</td>
+            <td><input type="text" class="ticket-input table-input" value="${
+              // Adicionado 'table-input'
+              vehicle.numero_ticket || ""
+            }" ${isSaved ? "disabled" : ""}></td>
+            <td><input type="text" class="modelo-input table-input" value="${
+              // Adicionado 'table-input'
+              vehicle.modelo || ""
+            }" ${isSaved ? "disabled" : ""}></td>
+            <td><input type="text" class="cor-input table-input" value="${
+              // Adicionado 'table-input'
+              vehicle.cor || ""
+            }" ${isSaved ? "disabled" : ""}></td>
+            <td><input type="text" class="placa-input table-input" value="${
+              // Adicionado 'table-input'
+              vehicle.placa || ""
+            }" ${isSaved ? "disabled" : ""}></td>
+            <td><input type="text" class="localizacao-input table-input" value="${
+              // Adicionado 'table-input'
+              vehicle.localizacao || ""
+            }" ${isSaved ? "disabled" : ""}></td>
+            <td><input type="text" class="observacoes-input table-input" value="${
+              // Adicionado 'table-input'
+              vehicle.observacoes || ""
+            }" ${isSaved ? "disabled" : ""}></td>
+            <td>
+                ${
+                  !isSaved
+                    ? `<button type="button" class="remove-row-btn btn-secondary">Remover</button>`
+                    : ""
+                }
+            </td>
         `;
-      const placaInput = newRow.querySelector(".placa-input");
-      const localizacaoInput = newRow.querySelector(".localizacao-input");
+
+    const placaInput = newRow.querySelector(".placa-input");
+    if (!isSaved) {
       IMask(placaInput, placaMaskOptions);
-      placaInput.addEventListener("keyup", (e) => {
-        if (e.target._imask.unmaskedValue.length === 7) {
-          localizacaoInput.focus();
+    }
+
+    if (isSaved) {
+      newRow.addEventListener("click", (e) => {
+        const targetIsInput = e.target.tagName === "INPUT";
+        if (targetIsInput && e.target.disabled) {
+          Swal.fire({
+            title: "Editar Veículo Registrado?",
+            text: "Deseja editar as informações deste veículo? A alteração será salva.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Sim, editar",
+            cancelButtonText: "Cancelar",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              newRow
+                .querySelectorAll("input")
+                .forEach((input) => (input.disabled = false));
+              newRow.classList.add("editing-row");
+              newRow.classList.remove("saved-row");
+              IMask(placaInput, placaMaskOptions); // Reaplicar máscara
+            }
+          });
         }
       });
-      vehiclesTableBody.appendChild(newRow);
+    } else {
+      const removeBtn = newRow.querySelector(".remove-row-btn");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", () => {
+          newRow.remove();
+        });
+      }
+    }
+    return newRow;
+  };
+
+  const loadVehiclesAndGenerateTable = async () => {
+    vehiclesTableBody.innerHTML =
+      '<tr><td colspan="8">Carregando veículos...</td></tr>';
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/veiculos/evento/${activeEventId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!response.ok) throw new Error("Falha ao carregar veículos.");
+
+      const vehicles = await response.json();
+      vehiclesTableBody.innerHTML = "";
+
+      if (vehicles.length > 0) {
+        vehicles.forEach((v) => vehiclesTableBody.appendChild(createRow(v)));
+      }
+      addMoreRows(parseInt(addRowCountInput.value, 10));
+    } catch (error) {
+      Swal.fire(
+        "Erro!",
+        "Não foi possível carregar os dados do evento.",
+        "error"
+      );
+      vehiclesTableBody.innerHTML =
+        '<tr><td colspan="8">Erro ao carregar.</td></tr>';
     }
   };
 
-  // --- CORREÇÃO 2: LÓGICA DE SUBMISSÃO REFEITA E SIMPLIFICADA ---
+  const addMoreRows = (countToAdd = null) => {
+    const count =
+      countToAdd !== null ? countToAdd : parseInt(addRowCountInput.value, 10);
+
+    const allTicketInputs = Array.from(
+      vehiclesTableBody.querySelectorAll(".ticket-input")
+    );
+    const existingTickets = allTicketInputs
+      .map((input) => parseInt(input.value, 10))
+      .filter((num) => !isNaN(num));
+
+    let lastTicketNum = 0;
+    if (existingTickets.length > 0) {
+      lastTicketNum = Math.max(...existingTickets);
+    } else {
+      lastTicketNum = 0;
+    }
+
+    for (let i = 1; i <= count; i++) {
+      const newTicketNum = (lastTicketNum + i).toString().padStart(2, "0");
+      vehiclesTableBody.appendChild(createRow({ numero_ticket: newTicketNum }));
+    }
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    const vehiclesToRegister = [];
-    let hasInvalidField = false;
-
-    // Remove todas as mensagens de erro e estilos antigos
-    vehiclesTableBody.querySelectorAll("tr").forEach((row) => {
-      row.classList.remove("error-row", "success-row");
-    });
+    const inserts = [];
+    const updates = [];
 
     for (const row of vehiclesTableBody.querySelectorAll("tr")) {
-      const inputs = {
-        ticket: row.querySelector(".ticket-input"),
-        modelo: row.querySelector(".modelo-input"),
-        cor: row.querySelector(".cor-input"),
-        placa: row.querySelector(".placa-input"),
-        localizacao: row.querySelector(".localizacao-input"),
-        observacoes: row.querySelector(".observacoes-input"),
+      if (
+        row.classList.contains("saved-row") &&
+        !row.classList.contains("editing-row")
+      )
+        continue;
+
+      const id = row.dataset.id;
+      const ticketInput = row.querySelector(".ticket-input");
+      const modeloInput = row.querySelector(".modelo-input");
+      const corInput = row.querySelector(".cor-input");
+      const placaInput = row.querySelector(".placa-input");
+
+      if (
+        !modeloInput.value.trim() &&
+        !corInput.value.trim() &&
+        !placaInput.value.trim()
+      ) {
+        continue;
+      }
+
+      const vehicleData = {
+        evento_id: activeEventId,
+        numero_ticket: ticketInput.value.trim(),
+        modelo: modeloInput.value.trim(),
+        cor: corInput.value.trim(),
+        placa: placaInput._imask
+          ? placaInput._imask.unmaskedValue.toUpperCase()
+          : placaInput.value.toUpperCase(),
+        localizacao: row.querySelector(".localizacao-input").value.trim(),
+        observacoes: row.querySelector(".observacoes-input").value.trim(),
       };
 
-      // Verifica se a linha está sendo preenchida (ignora linhas vazias)
-      const isRowBeingFilled = Object.keys(inputs)
-        .filter((key) => key !== "ticket" && key !== "observacoes") // Ignora campos opcionais ou pré-preenchidos
-        .some((key) => inputs[key].value.trim() !== "");
-
-      if (!isRowBeingFilled) {
-        continue; // Pula para a próxima linha
-      }
-
-      // Valida cada campo da linha
-      let isRowValid = true;
-      for (const key in inputs) {
-        if (!validateField(inputs[key], key)) {
-          isRowValid = false;
-        }
-      }
-
-      if (isRowValid) {
-        vehiclesToRegister.push({
-          rowElement: row,
-          data: {
-            evento_id: activeEventId,
-            numero_ticket: inputs.ticket.value.trim(),
-            modelo: inputs.modelo.value.trim(),
-            cor: inputs.cor.value.trim(),
-            placa: inputs.placa.value
-              .replace(/[^a-zA-Z0-9]/g, "")
-              .toUpperCase(),
-            localizacao: inputs.localizacao.value.trim(),
-            observacoes: inputs.observacoes.value.trim(),
-          },
-        });
-      } else {
-        hasInvalidField = true;
-        row.classList.add("error-row");
+      if (id && row.classList.contains("editing-row")) {
+        updates.push({ id, ...vehicleData });
+      } else if (!id) {
+        inserts.push(vehicleData);
       }
     }
 
-    if (hasInvalidField) {
+    if (inserts.length === 0 && updates.length === 0) {
       Swal.fire(
-        "Validação Pendente",
-        "Por favor, corrija os campos inválidos destacados em vermelho.",
-        "warning"
-      );
-      return;
-    }
-
-    if (vehiclesToRegister.length === 0) {
-      Swal.fire(
-        "Nenhum Veículo",
-        "Preencha os dados de pelo menos um veículo para registrar.",
+        "Nada a Salvar",
+        "Nenhum veículo novo ou editado para registrar.",
         "info"
       );
       return;
     }
 
     Swal.fire({
-      title: "Registrando veículos...",
-      text: "Por favor, aguarde.",
+      title: "Registrando...",
+      text: "Aguarde...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
 
-    const results = await Promise.all(
-      vehiclesToRegister.map(async (item) => {
-        try {
-          const response = await fetch(`${API_BASE_URL}/api/veiculos/entrada`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(item.data),
-          });
-          const data = await response.json();
-          return { ok: response.ok, data, item };
-        } catch (error) {
-          return { ok: false, data: { message: "Erro de rede" }, item };
-        }
-      })
-    );
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/veiculos/massa`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
 
-    let successCount = 0;
-    results.forEach(({ ok, data, item }) => {
-      if (ok) {
-        successCount++;
-        item.rowElement.classList.remove("error-row");
-        item.rowElement.classList.add("success-row");
-        item.rowElement
-          .querySelectorAll("input")
-          .forEach((input) => (input.disabled = true));
-      } else {
-        item.rowElement.classList.add("error-row");
-        Swal.fire(
-          "Erro no Registro",
-          `Erro ao registrar o ticket ${item.data.numero_ticket}: ${data.message}`,
-          "error"
-        );
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Erro no servidor.");
       }
-    });
 
-    if (successCount === vehiclesToRegister.length) {
       Swal.fire(
         "Sucesso!",
-        `${successCount} veículos foram registrados com sucesso!`,
+        "Veículos registrados e atualizados com sucesso!",
         "success"
       );
+      loadVehiclesAndGenerateTable();
+    } catch (error) {
+      Swal.fire("Erro!", error.message, "error");
     }
   };
 
-  // --- LISTENERS DE EVENTOS (sem alterações) ---
-  generateTableBtn.addEventListener("click", generateTable);
+  const filterTable = () => {
+    const filterText = searchInput.value.toLowerCase();
+    vehiclesTableBody.querySelectorAll("tr").forEach((row) => {
+      const rowText = row.textContent.toLowerCase();
+      const inputValues = Array.from(row.querySelectorAll("input"))
+        .map((i) => i.value.toLowerCase())
+        .join(" ");
+      row.style.display =
+        rowText.includes(filterText) || inputValues.includes(filterText)
+          ? ""
+          : "none";
+    });
+  };
+
+  async function generateVehicleMapPdf() {
+    Swal.fire({
+      title: "Gerando Mapa de Veículos...",
+      text: "Aguarde...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("l", "mm", "a4"); // 'l' para layout paisagem (landscape)
+
+      // --- INFORMAÇÕES DO CABEÇALHO ---
+      doc.setFontSize(18);
+      doc.text(
+        "Mapa de Veículos - Evento: " + activeEventDetails.nome_evento,
+        14,
+        20
+      );
+      doc.setFontSize(10);
+      doc.text(
+        `Local: ${activeEventDetails.local_evento} | Data: ${new Date(
+          activeEventDetails.data_evento
+        ).toLocaleDateString("pt-BR")}`,
+        14,
+        28
+      );
+
+      // Adiciona Horário do Evento (se disponível)
+      if (activeEventDetails.hora_inicio && activeEventDetails.hora_fim) {
+        doc.text(
+          `Horário: ${activeEventDetails.hora_inicio} - ${activeEventDetails.hora_fim}`,
+          14,
+          35
+        );
+      } else if (activeEventDetails.hora_inicio) {
+        doc.text(
+          `Horário de Início: ${activeEventDetails.hora_inicio}`,
+          14,
+          35
+        );
+      } else if (activeEventDetails.hora_fim) {
+        doc.text(`Horário de Término: ${activeEventDetails.hora_fim}`, 14, 35);
+      }
+
+      // Adiciona Data de Término do Evento (se diferente da data de início)
+      if (
+        activeEventDetails.data_fim &&
+        activeEventDetails.data_fim !== activeEventDetails.data_evento
+      ) {
+        doc.text(
+          `Data de Término: ${new Date(
+            activeEventDetails.data_fim
+          ).toLocaleDateString("pt-BR")}`,
+          14,
+          42
+        );
+      }
+
+      // --- DADOS DA TABELA ---
+      const tableHeaders = [
+        [
+          "Prisma",
+          "Ticket",
+          "Modelo",
+          "Cor",
+          "Placa",
+          "Localização",
+          "Observações",
+        ],
+      ];
+
+      const tableBody = [];
+      let totalVehicles = 0; // Contador para o total de veículos
+      vehiclesTableBody.querySelectorAll("tr").forEach((row) => {
+        if (row.style.display !== "none") {
+          const ticket = row.querySelector(".ticket-input").value || "";
+          const modelo = row.querySelector(".modelo-input").value || "";
+          const cor = row.querySelector(".cor-input").value || "";
+          const placa = row.querySelector(".placa-input").value || "";
+          const localizacao =
+            row.querySelector(".localizacao-input").value || "";
+          const observacoes =
+            row.querySelector(".observacoes-input").value || "";
+          const prisma = row.querySelector(".prisma-cell").textContent || "";
+
+          // Inclui apenas linhas que tenham pelo menos um campo principal preenchido
+          if (modelo || cor || placa || localizacao || observacoes) {
+            tableBody.push([
+              prisma,
+              ticket,
+              modelo,
+              cor,
+              placa,
+              localizacao,
+              observacoes,
+            ]);
+            totalVehicles++; // Incrementa o contador
+          }
+        }
+      });
+
+      doc.autoTable({
+        head: tableHeaders,
+        body: tableBody,
+        startY: 50, // Ajusta o startY para dar espaço às novas informações
+        theme: "grid",
+        styles: {
+          fontSize: 8,
+          cellPadding: 1.5,
+          overflow: "linebreak",
+          valign: "middle",
+          halign: "center",
+        },
+        headStyles: {
+          fillColor: [15, 52, 96],
+          textColor: 255,
+          fontSize: 9,
+          fontStyle: "bold",
+          halign: "center",
+        },
+        columnStyles: {
+          0: { cellWidth: 15 }, // Prisma
+          1: { cellWidth: 15 }, // Ticket
+          2: { cellWidth: 30 }, // Modelo
+          3: { cellWidth: 20 }, // Cor
+          4: { cellWidth: 25 }, // Placa
+          5: { cellWidth: 30 }, // Localização
+          6: { cellWidth: 60 }, // Observações
+        },
+        // Adiciona o rodapé com informações de geração
+        didDrawPage: function (data) {
+          doc.setFontSize(8);
+          const pageCount = doc.internal.getNumberOfPages();
+          doc.text(
+            `Página ${data.pageNumber} de ${pageCount}`,
+            data.settings.margin.left,
+            doc.internal.pageSize.height - 10
+          );
+          doc.text(
+            `Gerado por: ${user.nome_usuario} em ${new Date().toLocaleString(
+              "pt-BR"
+            )}`,
+            doc.internal.pageSize.width - data.settings.margin.right,
+            doc.internal.pageSize.height - 10,
+            { align: "right" }
+          );
+          doc.text(
+            `Total de Veículos no Mapa: ${totalVehicles}`,
+            data.settings.margin.left,
+            doc.internal.pageSize.height - 5
+          );
+        },
+      });
+
+      doc.save(
+        `Mapa_Veiculos_${activeEventDetails.nome_evento.replace(
+          /\s+/g,
+          "_"
+        )}.pdf`
+      );
+      Swal.close();
+    } catch (error) {
+      console.error("Erro ao gerar PDF do mapa de veículos:", error);
+      Swal.fire(
+        "Erro!",
+        "Não foi possível gerar o mapa de veículos. " + error.message,
+        "error"
+      );
+    }
+  }
+
+  const clearEmptyRows = () => {
+    const rows = vehiclesTableBody.querySelectorAll("tr");
+    rows.forEach((row) => {
+      const isSaved = row.classList.contains("saved-row");
+      if (!isSaved) {
+        const modeloInput = row.querySelector(".modelo-input");
+        const corInput = row.querySelector(".cor-input");
+        const placaInput = row.querySelector(".placa-input");
+
+        if (
+          !modeloInput.value.trim() &&
+          !corInput.value.trim() &&
+          !placaInput.value.trim()
+        ) {
+          row.remove();
+        }
+      }
+    });
+  };
+
+  addRowsBtn.addEventListener("click", () => addMoreRows());
   massRegisterForm.addEventListener("submit", handleFormSubmit);
-  generateTable(); // Gera a tabela inicial
+  searchInput.addEventListener("keyup", filterTable);
+  generatePdfBtn.addEventListener("click", generateVehicleMapPdf); // Chama a função de geração de PDF
+  clearEmptyRowsBtn.addEventListener("click", clearEmptyRows);
+
+  loadVehiclesAndGenerateTable();
 });

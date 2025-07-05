@@ -1,19 +1,24 @@
-// Arquivo: eventos.js (VERSÃO FINAL E SIMPLIFICADA)
-
 document.addEventListener("DOMContentLoaded", () => {
-  // --- BLOCO DE VERIFICAÇÃO SIMPLIFICADO ---
+  // --- BLOCO DE VERIFICAÇÃO (sem alterações) ---
   const { token, user } = verificarAutenticacao();
-  if (!user) return; // Para a execução se o usuário não for autenticado
-  // --- FIM DO BLOCO ---
+  if (!user) return;
 
+  // --- SELEÇÃO DE ELEMENTOS ---
   const createEventForm = document.getElementById("createEventForm");
   const nomeEventoInput = document.getElementById("nomeEvento");
   const dataEventoInput = document.getElementById("dataEvento");
+
+  // Certifique-se de que estas linhas estão presentes e corretas:
+  const horaInicioEventoInput = document.getElementById("horaInicioEvento");
+  const horaFimEventoInput = document.getElementById("horaFimEvento");
+  const dataFimEventoInput = document.getElementById("dataFimEvento"); // ESTA LINHA É A QUE ESTAVA FALTANDO OU ESTAVA NO LUGAR ERRADO
+
   const localEventoInput = document.getElementById("localEvento");
   const descricaoEventoInput = document.getElementById("descricaoEvento");
   const eventsContainer = document.getElementById("eventsContainer");
   const noEventsMessage = document.getElementById("noEventsMessage");
 
+  // --- FUNÇÃO PARA CARREGAR EVENTOS ---
   async function loadEvents() {
     eventsContainer.innerHTML = "<p>Carregando eventos...</p>";
     noEventsMessage.style.display = "none";
@@ -33,35 +38,49 @@ document.addEventListener("DOMContentLoaded", () => {
           eventItem.classList.add("event-item");
           const isActive = event.is_active;
 
+          const actionButtons = isActive
+            ? `
+              <button class="deactivate-event-btn" data-event-id="${event.id}">Desativar</button>
+              <button class="delete-event" data-event-id="${event.id}" disabled title="Desative o evento para poder excluir">Excluir</button>
+            `
+            : `
+              <button class="set-active-btn" data-event-id="${
+                event.id
+              }" data-event-details='${JSON.stringify(
+                event
+              )}'>Definir como Ativo</button>
+              <button class="delete-event" data-event-id="${
+                event.id
+              }">Excluir</button>
+            `;
+
           eventItem.innerHTML = `
               <h3>${event.nome_evento} ${
             isActive
               ? '<span class="active-event-indicator">(ATIVO)</span>'
               : ""
           }</h3>
-              <p>Data: ${new Date(event.data_evento).toLocaleDateString(
-                "pt-BR"
-              )}</p>
+            <p>Data: ${new Date(event.data_evento).toLocaleDateString(
+              "pt-BR"
+            )} ${
+            event.data_fim &&
+            new Date(event.data_fim).toLocaleDateString("pt-BR") !==
+              new Date(event.data_evento).toLocaleDateString("pt-BR")
+              ? " - " + new Date(event.data_fim).toLocaleDateString("pt-BR")
+              : ""
+          }</p>
+            <p>Horário: ${event.hora_inicio} - ${event.hora_fim}</p>
               <p>Local: ${event.local_evento}</p>
               <p>Descrição: ${event.descricao || "N/A"}</p>
               <div class="actions">
-                  <button class="set-active-btn" data-event-id="${
-                    event.id
-                  }" data-event-details='${JSON.stringify(event)}' ${
-            isActive ? "disabled" : ""
-          }>
-                      ${isActive ? "Evento Ativo" : "Definir como Ativo"}
-                  </button>
-                  <button class="delete-event" data-event-id="${
-                    event.id
-                  }">Excluir</button>
+                  ${actionButtons}
                   <button class="report-btn" data-event-id="${
                     event.id
                   }">Gerar Relatório</button>
               </div>`;
           eventsContainer.appendChild(eventItem);
         });
-        addEventListeners();
+        addEventListeners(); // Adiciona os listeners aos botões recém-criados
       } else {
         Swal.fire(
           "Erro!",
@@ -78,19 +97,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // --- FUNÇÃO PARA ADICIONAR LISTENERS AOS BOTÕES ---
   function addEventListeners() {
+    // Listener para "Definir como Ativo" (sem alterações)
     document.querySelectorAll(".set-active-btn").forEach((button) => {
       button.addEventListener("click", async (e) => {
         const eventId = e.target.dataset.eventId;
         const eventDetails = JSON.parse(e.target.dataset.eventDetails);
-
-        Swal.fire({
-          title: "Ativando evento...",
-          text: "Por favor, aguarde.",
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading(),
-        });
-
         try {
           const response = await fetch(
             `${API_BASE_URL}/api/eventos/${eventId}/ativar`,
@@ -99,26 +112,70 @@ document.addEventListener("DOMContentLoaded", () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
-
-          const data = await response.json();
-          if (!response.ok)
-            throw new Error(data.message || "Falha ao ativar o evento.");
-
+          if (!response.ok) throw new Error("Falha ao ativar o evento.");
           localStorage.setItem("activeEventId", eventId);
           localStorage.setItem(
             "activeEventDetails",
             JSON.stringify(eventDetails)
           );
-
-          Swal.fire({
-            icon: "success",
-            title: "Evento Ativado!",
-            text: `O evento "${eventDetails.nome_evento}" agora está ativo.`,
-          });
+          Swal.fire(
+            "Evento Ativado!",
+            `O evento "${eventDetails.nome_evento}" agora está ativo.`,
+            "success"
+          );
           loadEvents();
         } catch (error) {
           Swal.fire("Erro!", error.message, "error");
         }
+      });
+    });
+
+    // Listener para o botão "DESATIVAR"
+    document.querySelectorAll(".deactivate-event-btn").forEach((button) => {
+      button.addEventListener("click", async (e) => {
+        // const eventId = e.target.dataset.eventId; // Não é necessário enviar o ID para a rota /desativar
+        Swal.fire({
+          title: "Desativar Evento?",
+          text: "Isso removerá o evento ativo, mas não excluirá nenhum dado.",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Sim, desativar!",
+          cancelButtonText: "Cancelar",
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              const response = await fetch(
+                `${API_BASE_URL}/api/eventos/desativar`,
+                {
+                  method: "PUT",
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              const data = await response.json();
+              if (!response.ok) {
+                // Se o backend retornar 404 com mensagem "Nenhum evento ativo para desativar."
+                // podemos tratar como sucesso ou informação, dependendo da UX desejada.
+                // Aqui, vamos tratar como erro se não for 200 OK.
+                throw new Error(data.message || "Erro ao desativar evento.");
+              }
+
+              // Limpa o evento ativo do armazenamento local
+              localStorage.removeItem("activeEventId");
+              localStorage.removeItem("activeEventDetails");
+
+              Swal.fire(
+                "Desativado!",
+                data.message || "O evento foi desativado com sucesso.", // Usa a mensagem do backend
+                "success"
+              );
+              loadEvents(); // Recarrega a lista para refletir a mudança
+            } catch (error) {
+              Swal.fire("Erro!", error.message, "error");
+            }
+          }
+        });
       });
     });
 
@@ -193,6 +250,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const body = {
       nome_evento: nomeEventoInput.value,
       data_evento: dataEventoInput.value,
+      hora_inicio: horaInicioEventoInput.value,
+      hora_fim: horaFimEventoInput.value,
+      data_fim: dataFimEventoInput.value, // AQUI É ONDE ESTAVA DANDO O ERRO DE REFERÊNCIA
       local_evento: localEventoInput.value,
       descricao: descricaoEventoInput.value,
     };
@@ -255,7 +315,8 @@ document.addEventListener("DOMContentLoaded", () => {
         14,
         54
       );
-      doc.text(`Descrição: ${evento.descricao || "N/A"}`, 14, 61);
+      doc.text(`Horário: ${evento.hora_inicio} - ${evento.hora_fim}`, 14, 61); // NOVO
+      doc.text(`Descrição: ${evento.descricao || "N/A"}`, 14, 68); // Ajustar Y
 
       const tableHeaders = [
         [
