@@ -80,26 +80,21 @@ router.get(
 router.post("/", auth, authorize("admin"), async (req, res) => {
   const {
     nome_evento,
-    data_evento,
+    data_evento, // Data de início
+    data_fim, // Data de término
+    hora_inicio, // Hora de início
+    hora_fim, // Hora de término
     local_evento,
     descricao,
-    hora_inicio,
-    data_fim,
-    hora_fim,
   } = req.body;
-  // Validações de campos obrigatórios
-  if (
-    !nome_evento ||
-    !data_evento ||
-    !local_evento ||
-    !hora_inicio ||
-    !data_fim ||
-    !hora_fim
-  ) {
-    // Incluir data_fim
-    return res
-      .status(400)
-      .json({ message: "Todos os campos de evento são obrigatórios." });
+
+  // --- VALIDAÇÕES DE CAMPOS OBRIGATÓRIOS ---
+  // Ajustado para considerar que data_fim, hora_inicio e hora_fim podem ser opcionais
+  // dependendo da lógica de negócio, mas para o seu caso, estão sendo enviados.
+  if (!nome_evento || !data_evento || !local_evento) {
+    return res.status(400).json({
+      message: "Nome, data de início e local do evento são obrigatórios.",
+    });
   }
 
   // Validação do Nome do Evento
@@ -108,14 +103,12 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
       .status(400)
       .json({ message: "Nome do evento deve ter entre 3 e 100 caracteres." });
   }
-  // Permite letras, números, espaços e hífens
   if (!/^[a-zA-Z0-9\s-]+$/.test(nome_evento)) {
     return res.status(400).json({
       message:
         "Nome do evento contém caracteres inválidos. Use letras, números, espaços e hífens.",
     });
   }
-  // Garante que não seja apenas numérico
   if (/^\d+$/.test(nome_evento)) {
     return res
       .status(400)
@@ -141,15 +134,32 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
     });
   }
 
-  // Validação da Data e Hora do Evento
+  // --- VALIDAÇÃO DE DATAS E HORAS ---
   const now = new Date();
-  now.setSeconds(0, 0);
+  now.setSeconds(0, 0); // Zera segundos e milissegundos para comparação precisa
 
-  const eventStartDate = new Date(data_evento); // Data de início do evento
-  const eventEndDate = new Date(data_fim); // Data de fim do evento
+  const eventStartDate = new Date(data_evento);
+  eventStartDate.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas a data
 
-  const eventStartDateTime = new Date(`${data_evento}T${hora_inicio}:00`); // Data e hora de início do evento
-  const eventEndDateTime = new Date(`${data_fim}T${hora_fim}:00`); // Data e hora de fim do evento
+  let finalDataFim = data_fim || data_evento; // Se data_fim não for fornecida, usa data_evento
+  const eventEndDate = new Date(finalDataFim);
+  eventEndDate.setHours(0, 0, 0, 0);
+
+  // Validação de formato de hora (HH:MM)
+  const timeRegex = /^(?:2[0-3]|[01]?[0-9]):[0-5][0-9]$/;
+  if (
+    (hora_inicio && !timeRegex.test(hora_inicio)) ||
+    (hora_fim && !timeRegex.test(hora_fim))
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Formato de hora inválido. Use HH:MM." });
+  }
+
+  // Combina data e hora para criar objetos Date completos para comparação
+  // Assume que hora_inicio e hora_fim são sempre fornecidos pelo frontend agora
+  const eventStartDateTime = new Date(`${data_evento}T${hora_inicio}:00`);
+  const eventEndDateTime = new Date(`${finalDataFim}T${hora_fim}:00`);
 
   // 1. Validação: Data de fim não pode ser anterior à data de início
   if (eventEndDate < eventStartDate) {
@@ -181,8 +191,10 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
   }
 
   // 4. Validação: Se o evento começa HOJE, a hora de início não pode ser passada
+  // Compara a data de início do evento com a data de hoje. Se for hoje, compara as horas.
   if (eventStartDate.getTime() === todayDateOnly.getTime()) {
     if (eventStartDateTime < now) {
+      // now já tem segundos e milissegundos zerados
       return res.status(400).json({
         message:
           "Para eventos que começam hoje, a hora de início não pode ser passada.",
@@ -193,7 +205,7 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
   // 5. Validação: Limitar a criação de eventos com no máximo 12 meses de antecedência (baseado na data de início)
   const maxFutureDate = new Date();
   maxFutureDate.setFullYear(maxFutureDate.getFullYear() + 1);
-  maxFutureDate.setHours(23, 59, 59, 999);
+  maxFutureDate.setHours(23, 59, 59, 999); // Define para o final do dia do próximo ano
 
   if (eventStartDateTime > maxFutureDate) {
     return res.status(400).json({
@@ -202,34 +214,18 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
     });
   }
 
-  // Validação de formato de hora (HH:MM) - Já está ok
-  const timeRegex = /^(?:2[0-3]|[01]?[0-9]):[0-5][0-9]$/;
-  if (!timeRegex.test(hora_inicio) || !timeRegex.test(hora_fim)) {
-    return res
-      .status(400)
-      .json({ message: "Formato de hora inválido. Use HH:MM." });
-  }
-
-  // Validação se hora_fim é depois de hora_inicio - Já está ok
-  if (eventDateTimeEnd <= eventDateTimeStart) {
-    // Comparação direta de objetos Date
-    return res
-      .status(400)
-      .json({ message: "A hora de fim deve ser posterior à hora de início." });
-  }
-
   try {
     const [result] = await pool.query(
-      "INSERT INTO eventos (nome_evento, data_evento, hora_inicio, data_fim, hora_fim, local_evento, descricao) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO eventos (nome_evento, data_evento, data_fim, hora_inicio, hora_fim, local_evento, descricao) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         nome_evento,
         data_evento,
+        finalDataFim, // Usa a data de fim ajustada
         hora_inicio,
-        data_fim,
         hora_fim,
         local_evento,
         descricao,
-      ] // Incluir data_fim
+      ]
     );
     res.status(201).json({
       message: "Evento criado com sucesso!",
@@ -268,9 +264,15 @@ router.put(
       if (result.affectedRows === 0) {
         return res.status(404).json({ message: "Evento não encontrado." });
       }
-      res
-        .status(200)
-        .json({ message: "Evento definido como ativo com sucesso!" });
+      // Após ativar, busca os detalhes completos do evento para retornar ao frontend
+      const [activatedEvent] = await connection.query(
+        "SELECT * FROM eventos WHERE id = ?",
+        [id]
+      );
+      res.status(200).json({
+        message: "Evento definido como ativo com sucesso!",
+        event: activatedEvent[0],
+      });
     } catch (error) {
       await connection.rollback();
       console.error("Erro ao ativar evento:", error);
@@ -363,7 +365,6 @@ router.put(
       );
 
       if (result.affectedRows === 0) {
-        // Isso pode acontecer se já não houver evento ativo, o que não é um erro grave.
         return res
           .status(200)
           .json({ message: "Nenhum evento ativo para desativar." });
