@@ -178,7 +178,3 @@ Contribuições são bem-vindas! Se você tiver sugestões, melhorias ou encontr
 ## Licença
 
 Este projeto está licenciado sob a [MIT License](LICENSE).
-
----
-
-Espero que este documento e o README ajudem a dar uma visão clara do seu projeto e do seu potencial futuro!
