@@ -3,7 +3,7 @@ const pool = require("../config/db");
 const router = express.Router();
 const { auth, authorize } = require("../middleware/authMiddleware");
 
-// Rota para Registrar a Entrada de um Veículo
+// Rota para Registrar a Entrada de um ÚNICO Veículo (mantida para outras telas)
 router.post(
   "/entrada",
   auth,
@@ -20,116 +20,29 @@ router.post(
     } = req.body;
     const usuario_entrada_id = req.user.id;
 
-    // --- INÍCIO DA DEPURACAO (MANTIDO PARA VERIFICAR A LIMPEZA) ---
-    console.log("------------------------------------");
-    console.log("Dados recebidos no backend para veículo:");
-    console.log("evento_id:", evento_id);
-    console.log("numero_ticket:", numero_ticket);
-    console.log("modelo:", modelo);
-    console.log("cor:", cor);
-    console.log("placa recebida (original):", placa);
-    console.log("tipo da placa (original):", typeof placa);
-    console.log(
-      "tamanho da placa (original):",
-      placa ? placa.length : "null/undefined"
-    );
-
     const cleanedPlaca = String(placa)
       .replace(/[^a-zA-Z0-9]/g, "")
       .toUpperCase();
 
-    console.log("placa limpa para validação:", cleanedPlaca);
-    console.log("tamanho da placa limpa:", cleanedPlaca.length);
-    // --- FIM DA CORREÇÃO ---
-
-    // --- INÍCIO DAS VALIDAÇÕES DE REGRA DE NEGÓCIO ---
-
-    // 1. Validação de Campos Obrigatórios
     if (
       !evento_id ||
-      !numero_ticket.trim() || // Garante que não é apenas espaços em branco
+      !numero_ticket.trim() ||
       !modelo.trim() ||
       !cor.trim() ||
-      !cleanedPlaca.trim() || // Usa a placa limpa para validação de obrigatoriedade
+      !cleanedPlaca.trim() ||
       !localizacao.trim()
     ) {
       return res.status(400).json({
-        message: "Todos os campos são obrigatórios e não podem ser vazios.",
+        message: "Todos os campos (exceto observações) são obrigatórios.",
       });
     }
-
-    // NOVO: Validação de Número do Ticket - Tamanho (mín. 1, máx. 10)
-    if (numero_ticket.length < 1 || numero_ticket.length > 10) {
-      return res.status(400).json({
-        message: "Número do Ticket deve ter entre 1 e 10 caracteres.",
-      });
-    }
-    // NOVO: Validação de Número do Ticket - Formato (alfanumérico, pode incluir hífens)
-    if (!/^[a-zA-Z0-9-]+$/.test(numero_ticket)) {
-      return res.status(400).json({
-        message:
-          "Número do Ticket contém caracteres inválidos. Use apenas letras, números ou hífens.",
-      });
-    }
-
-    // 2. Validação de Modelo
-    if (modelo.length < 2 || modelo.length > 50) {
-      return res
-        .status(400)
-        .json({ message: "Modelo deve ter entre 2 e 50 caracteres." });
-    }
-    if (!/^[a-zA-Z0-9\s-]+$/.test(modelo)) {
-      return res
-        .status(400)
-        .json({ message: "Modelo contém caracteres inválidos." });
-    }
-
-    // 3. Validação de Cor
-    if (cor.length < 2 || cor.length > 20) {
-      return res
-        .status(400)
-        .json({ message: "Cor deve ter entre 2 e 20 caracteres." });
-    }
-    if (!/^[a-zA-Z\s]+$/.test(cor)) {
-      return res
-        .status(400)
-        .json({ message: "Cor contém caracteres inválidos." });
-    }
-
-    // 4. Validação de Placa (AGORA USANDO cleanedPlaca)
     if (cleanedPlaca.length !== 7) {
       return res
         .status(400)
         .json({ message: "Placa deve ter exatamente 7 caracteres." });
     }
-    if (!/^[a-zA-Z0-9]+$/.test(cleanedPlaca)) {
-      // Garante que é alfanumérico após a limpeza
-      return res
-        .status(400)
-        .json({ message: "Placa contém caracteres inválidos." });
-    }
-
-    // 5. Validação de Localização
-    if (localizacao.length < 1 || localizacao.length > 50) {
-      return res
-        .status(400)
-        .json({ message: "Localização deve ter entre 1 e 50 caracteres." });
-    }
-    if (!/^[a-zA-Z0-9\s\/-]+$/.test(localizacao)) {
-      return res
-        .status(400)
-        .json({ message: "Localização contém caracteres inválidos." });
-    }
-    if (observacoes && observacoes.length > 255) {
-      return res
-        .status(400)
-        .json({ message: "Observações não podem exceder 255 caracteres." });
-    }
-
-    // --- FIM DAS VALIDAÇÕES DE REGRA DE NEGÓCIO ---
 
     try {
-      // Validação de Ticket Único por Evento
       const [existingVehicle] = await pool.query(
         "SELECT id FROM veiculos WHERE evento_id = ? AND numero_ticket = ?",
         [evento_id, numero_ticket]
@@ -152,7 +65,7 @@ router.post(
           localizacao,
           hora_entrada,
           usuario_entrada_id,
-          observacoes || null, // Se observacoes for uma string vazia, insere NULL no banco
+          observacoes || null,
         ]
       );
       res.status(201).json({
@@ -161,6 +74,130 @@ router.post(
       });
     } catch (error) {
       console.error("[VEICULOS] Erro ao registrar entrada de veículo:", error);
+      res.status(500).json({ message: "Erro interno do servidor." });
+    }
+  }
+);
+
+// --- NOVA ROTA PARA REGISTRO E ATUALIZAÇÃO EM MASSA ---
+router.post(
+  "/massa",
+  auth,
+  authorize("admin", "orientador"),
+  async (req, res) => {
+    const { inserts, updates } = req.body;
+    const usuario_id = req.user.id;
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      const results = { created: [], updated: [], errors: [] };
+
+      // Processa as inserções
+      if (inserts && inserts.length > 0) {
+        for (const veiculo of inserts) {
+          const [existing] = await connection.query(
+            "SELECT id FROM veiculos WHERE evento_id = ? AND numero_ticket = ?",
+            [veiculo.evento_id, veiculo.numero_ticket]
+          );
+          if (existing.length > 0) {
+            results.errors.push({
+              ticket: veiculo.numero_ticket,
+              message: "Ticket já existe.",
+            });
+            continue;
+          }
+          const [result] = await connection.query(
+            "INSERT INTO veiculos (evento_id, numero_ticket, modelo, cor, placa, localizacao, observacoes, hora_entrada, usuario_entrada_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+              veiculo.evento_id,
+              veiculo.numero_ticket,
+              veiculo.modelo,
+              veiculo.cor,
+              veiculo.placa,
+              veiculo.localizacao,
+              veiculo.observacoes,
+              new Date(),
+              usuario_id,
+            ]
+          );
+          results.created.push({
+            id: result.insertId,
+            numero_ticket: veiculo.numero_ticket,
+          });
+        }
+      }
+
+      // Processa as atualizações
+      if (updates && updates.length > 0) {
+        for (const veiculo of updates) {
+          await connection.query(
+            "UPDATE veiculos SET modelo = ?, cor = ?, placa = ?, localizacao = ?, observacoes = ? WHERE id = ? AND evento_id = ?",
+            [
+              veiculo.modelo,
+              veiculo.cor,
+              veiculo.placa,
+              veiculo.localizacao,
+              veiculo.observacoes,
+              veiculo.id,
+              veiculo.evento_id,
+            ]
+          );
+          results.updated.push({
+            id: veiculo.id,
+            numero_ticket: veiculo.numero_ticket,
+          });
+        }
+      }
+
+      await connection.commit();
+      res
+        .status(200)
+        .json({ message: "Operação em massa concluída com sucesso!", results });
+    } catch (error) {
+      await connection.rollback();
+      console.error("[VEICULOS] Erro na operação em massa:", error);
+      res
+        .status(500)
+        .json({ message: "Erro interno do servidor ao processar os dados." });
+    } finally {
+      connection.release();
+    }
+  }
+);
+
+// Rota para Listar Veículos de um Evento Específico (sem alterações)
+router.get(
+  "/evento/:idEvento",
+  auth,
+  authorize("admin", "orientador", "manobrista"),
+  async (req, res) => {
+    const { idEvento } = req.params;
+    const { status, search } = req.query;
+    let query = `
+        SELECT v.*, u_entrada.nome_usuario AS nome_usuario_entrada, u_saida.nome_usuario AS nome_usuario_saida 
+        FROM veiculos v 
+        JOIN usuarios u_entrada ON v.usuario_entrada_id = u_entrada.id 
+        LEFT JOIN usuarios u_saida ON v.usuario_saida_id = u_saida.id 
+        WHERE v.evento_id = ?`;
+    let params = [idEvento];
+    if (status) {
+      query += " AND v.status = ?";
+      params.push(status);
+    }
+    if (search) {
+      query +=
+        " AND (v.placa LIKE ? OR v.numero_ticket LIKE ? OR v.modelo LIKE ? OR v.cor LIKE ?)";
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+    query += " ORDER BY v.hora_entrada ASC";
+    try {
+      const [veiculos] = await pool.query(query, params);
+      res.status(200).json(veiculos);
+    } catch (error) {
+      console.error("Erro ao listar veículos:", error);
       res.status(500).json({ message: "Erro interno do servidor." });
     }
   }

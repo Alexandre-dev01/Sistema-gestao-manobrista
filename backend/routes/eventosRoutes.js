@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require("../config/db");
 const { auth, authorize } = require("../middleware/authMiddleware");
 
-// Rota para Listar Todos os Eventos - Sem alterações necessárias para validação de entrada
+// Rota para Listar Todos os Eventos
 router.get("/", auth, authorize("admin", "orientador"), async (req, res) => {
   try {
     const [eventos] = await pool.query(
@@ -16,7 +16,7 @@ router.get("/", auth, authorize("admin", "orientador"), async (req, res) => {
   }
 });
 
-// Rota: Obter o evento atualmente ativo - Sem alterações necessárias para validação de entrada
+// Rota: Obter o evento atualmente ativo
 router.get("/ativo", auth, async (req, res) => {
   try {
     const [eventos] = await pool.query(
@@ -32,7 +32,7 @@ router.get("/ativo", auth, async (req, res) => {
   }
 });
 
-// Rota: Obter Estatísticas do Evento ATIVO - Sem alterações necessárias para validação de entrada
+// Rota: Obter Estatísticas do Evento ATIVO
 router.get(
   "/ativo/stats",
   auth,
@@ -78,82 +78,166 @@ router.get(
 
 // Rota para Criar um Novo Evento
 router.post("/", auth, authorize("admin"), async (req, res) => {
-  const { nome_evento, data_evento, local_evento, descricao } = req.body;
-
-  // 1. Validação de campos obrigatórios
-  if (!nome_evento || !data_evento || !local_evento) {
+  const {
+    nome_evento,
+    data_evento,
+    local_evento,
+    descricao,
+    hora_inicio,
+    data_fim,
+    hora_fim,
+  } = req.body;
+  // Validações de campos obrigatórios
+  if (
+    !nome_evento ||
+    !data_evento ||
+    !local_evento ||
+    !hora_inicio ||
+    !data_fim ||
+    !hora_fim
+  ) {
+    // Incluir data_fim
     return res
       .status(400)
-      .json({ message: "Nome, data e local do evento são obrigatórios." });
+      .json({ message: "Todos os campos de evento são obrigatórios." });
   }
 
-  // NOVO: Validação de Nome do Evento - Tamanho (mín. 3, máx. 100)
+  // Validação do Nome do Evento
   if (nome_evento.length < 3 || nome_evento.length > 100) {
     return res
       .status(400)
       .json({ message: "Nome do evento deve ter entre 3 e 100 caracteres." });
   }
-  // NOVO: Validação de Nome do Evento - Formato (alfanumérico, espaços, hífens)
+  // Permite letras, números, espaços e hífens
   if (!/^[a-zA-Z0-9\s-]+$/.test(nome_evento)) {
+    return res.status(400).json({
+      message:
+        "Nome do evento contém caracteres inválidos. Use letras, números, espaços e hífens.",
+    });
+  }
+  // Garante que não seja apenas numérico
+  if (/^\d+$/.test(nome_evento)) {
     return res
       .status(400)
-      .json({ message: "Nome do evento contém caracteres inválidos." });
+      .json({ message: "Nome do evento não pode ser apenas numérico." });
   }
 
-  // NOVO: Validação de Local do Evento - Tamanho (mín. 3, máx. 100)
+  // Validação do Local do Evento
   if (local_evento.length < 3 || local_evento.length > 100) {
     return res
       .status(400)
       .json({ message: "Local do evento deve ter entre 3 e 100 caracteres." });
   }
-  // Validação de Local do Evento - Formato (alfanumérico, espaços, vírgulas, pontos, hífens, e caracteres acentuados)
-  // Esta regex substitui a anterior para ser mais abrangente.
   if (!/^[a-zA-Z0-9\s,.\-áàâãéèêíóôõúüçÁÀÂÃÉÈÍÓÔÕÚÜÇ]+$/.test(local_evento)) {
     return res
       .status(400)
       .json({ message: "Local do evento contém caracteres inválidos." });
   }
 
-  // NOVO: Validação de Descrição - Tamanho máximo (máx. 255), se fornecida
+  // Validação da Descrição
   if (descricao && descricao.length > 255) {
     return res.status(400).json({
       message: "Descrição do evento não pode exceder 255 caracteres.",
     });
   }
 
-  // Lógica de data ajustada para comparar strings YYYY-MM-DD
-  const today = new Date();
-  // Formata a data atual para YYYY-MM-DD no fuso horário local
-  const todayString =
-    today.getFullYear() +
-    "-" +
-    String(today.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(today.getDate()).padStart(2, "0");
+  // Validação da Data e Hora do Evento
+  const now = new Date();
+  now.setSeconds(0, 0);
 
-  // A data_evento já vem do frontend no formato YYYY-MM-DD
-  // Compara as strings diretamente
-  if (data_evento < todayString) {
+  const eventStartDate = new Date(data_evento); // Data de início do evento
+  const eventEndDate = new Date(data_fim); // Data de fim do evento
+
+  const eventStartDateTime = new Date(`${data_evento}T${hora_inicio}:00`); // Data e hora de início do evento
+  const eventEndDateTime = new Date(`${data_fim}T${hora_fim}:00`); // Data e hora de fim do evento
+
+  // 1. Validação: Data de fim não pode ser anterior à data de início
+  if (eventEndDate < eventStartDate) {
+    return res.status(400).json({
+      message: "A data de fim não pode ser anterior à data de início.",
+    });
+  }
+
+  // 2. Validação: Se as datas de início e fim são as mesmas, a hora de fim deve ser posterior à hora de início
+  if (eventEndDate.getTime() === eventStartDate.getTime()) {
+    if (eventEndDateTime <= eventStartDateTime) {
+      return res.status(400).json({
+        message:
+          "Para eventos no mesmo dia, a hora de fim deve ser posterior à hora de início.",
+      });
+    }
+  }
+
+  // 3. Validação: Data de início do evento não pode ser passada
+  const todayDateOnly = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+  if (eventStartDate < todayDateOnly) {
+    return res.status(400).json({
+      message: "A data de início do evento não pode ser uma data passada.",
+    });
+  }
+
+  // 4. Validação: Se o evento começa HOJE, a hora de início não pode ser passada
+  if (eventStartDate.getTime() === todayDateOnly.getTime()) {
+    if (eventStartDateTime < now) {
+      return res.status(400).json({
+        message:
+          "Para eventos que começam hoje, a hora de início não pode ser passada.",
+      });
+    }
+  }
+
+  // 5. Validação: Limitar a criação de eventos com no máximo 12 meses de antecedência (baseado na data de início)
+  const maxFutureDate = new Date();
+  maxFutureDate.setFullYear(maxFutureDate.getFullYear() + 1);
+  maxFutureDate.setHours(23, 59, 59, 999);
+
+  if (eventStartDateTime > maxFutureDate) {
+    return res.status(400).json({
+      message:
+        "A data de início do evento não pode exceder 12 meses a partir da data atual.",
+    });
+  }
+
+  // Validação de formato de hora (HH:MM) - Já está ok
+  const timeRegex = /^(?:2[0-3]|[01]?[0-9]):[0-5][0-9]$/;
+  if (!timeRegex.test(hora_inicio) || !timeRegex.test(hora_fim)) {
     return res
       .status(400)
-      .json({ message: "A data do evento não pode ser uma data passada." });
+      .json({ message: "Formato de hora inválido. Use HH:MM." });
+  }
+
+  // Validação se hora_fim é depois de hora_inicio - Já está ok
+  if (eventDateTimeEnd <= eventDateTimeStart) {
+    // Comparação direta de objetos Date
+    return res
+      .status(400)
+      .json({ message: "A hora de fim deve ser posterior à hora de início." });
   }
 
   try {
     const [result] = await pool.query(
-      "INSERT INTO eventos (nome_evento, data_evento, local_evento, descricao) VALUES (?, ?, ?, ?)",
-      [nome_evento, data_evento, local_evento, descricao]
+      "INSERT INTO eventos (nome_evento, data_evento, hora_inicio, data_fim, hora_fim, local_evento, descricao) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        nome_evento,
+        data_evento,
+        hora_inicio,
+        data_fim,
+        hora_fim,
+        local_evento,
+        descricao,
+      ] // Incluir data_fim
     );
     res.status(201).json({
       message: "Evento criado com sucesso!",
       eventoId: result.insertId,
     });
   } catch (error) {
-    // Adicione um log mais detalhado para depuração
     console.error("[EVENTOS] Erro ao criar evento:", error);
-    // Verifique se o erro é de validação de dados ou outro tipo
     if (error.code === "ER_DATA_TOO_LONG") {
-      // Exemplo de erro MySQL para string muito longa
       return res.status(400).json({
         message: "Um dos campos é muito longo para o banco de dados.",
       });
@@ -162,7 +246,7 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
   }
 });
 
-// Rota: Definir um evento como ativo - Sem alterações necessárias para validação de entrada
+// Rota: Definir um evento como ativo
 router.put(
   "/:id/ativar",
   auth,
@@ -197,30 +281,36 @@ router.put(
   }
 );
 
-// Rota para Excluir um Evento - Sem alterações necessárias para validação de entrada
+// Rota para Excluir um Evento
 router.delete("/:id", auth, authorize("admin"), async (req, res) => {
   const { id } = req.params;
   try {
-    // NOVO: Verificar se o evento a ser excluído é o evento ativo
-    const [activeEvent] = await pool.query(
-      "SELECT id FROM eventos WHERE is_active = TRUE LIMIT 1"
+    // Verificar se o evento está ativo antes de excluir
+    const [eventos] = await pool.query(
+      "SELECT is_active FROM eventos WHERE id = ?",
+      [id]
     );
-    if (activeEvent.length > 0 && activeEvent[0].id == id) {
+    if (eventos.length === 0) {
+      return res.status(404).json({ message: "Evento não encontrado." });
+    }
+    if (eventos[0].is_active) {
       return res.status(400).json({
-        message: "Não é possível excluir o evento ativo. Desative-o primeiro.",
+        message:
+          "Não é possível excluir um evento que está ativo. Desative-o primeiro.",
       });
     }
 
+    // Excluir veículos associados primeiro (se houver CASCADE no DB, não precisa)
     await pool.query("DELETE FROM veiculos WHERE evento_id = ?", [id]);
+
     const [result] = await pool.query("DELETE FROM eventos WHERE id = ?", [id]);
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Evento não encontrado." });
     }
-    res
-      .status(200)
-      .json({ message: "Evento e veículos associados foram excluídos." });
+    res.status(200).json({ message: "Evento excluído com sucesso!" });
   } catch (error) {
-    console.error(`Erro ao excluir evento ID ${id}:`, error);
+    console.error("Erro ao excluir evento:", error);
     res.status(500).json({ message: "Erro interno do servidor." });
   }
 });
@@ -232,39 +322,59 @@ router.get(
   authorize("admin", "orientador"),
   async (req, res) => {
     const { id } = req.params;
-
     try {
-      // Buscar detalhes do evento
-      const [eventos] = await pool.query("SELECT * FROM eventos WHERE id = ?", [
+      const [evento] = await pool.query("SELECT * FROM eventos WHERE id = ?", [
         id,
       ]);
-      const evento = eventos[0];
-
-      if (!evento) {
+      if (evento.length === 0) {
         return res.status(404).json({ message: "Evento não encontrado." });
       }
 
-      // Buscar veículos associados ao evento, incluindo nomes dos usuários
       const [veiculos] = await pool.query(
-        `
-        SELECT 
+        `SELECT 
           v.*, 
           u_entrada.nome_usuario AS nome_usuario_entrada, 
           u_saida.nome_usuario AS nome_usuario_saida 
-        FROM veiculos v
-        JOIN usuarios u_entrada ON v.usuario_entrada_id = u_entrada.id
-        LEFT JOIN usuarios u_saida ON v.usuario_saida_id = u_saida.id
+        FROM veiculos v 
+        JOIN usuarios u_entrada ON v.usuario_entrada_id = u_entrada.id 
+        LEFT JOIN usuarios u_saida ON v.usuario_saida_id = u_saida.id 
         WHERE v.evento_id = ?
-        ORDER BY v.hora_entrada ASC
-        `,
+        ORDER BY v.hora_entrada ASC`,
         [id]
       );
 
-      res.status(200).json({ evento, veiculos });
+      res.status(200).json({ evento: evento[0], veiculos });
     } catch (error) {
-      console.error(`Erro ao gerar relatório para evento ID ${id}:`, error);
+      console.error("Erro ao gerar relatório do evento:", error);
       res.status(500).json({ message: "Erro interno do servidor." });
     }
   }
 );
+
+// Rota para Desativar o Evento Ativo
+router.put(
+  "/desativar",
+  auth,
+  authorize("admin", "orientador"),
+  async (req, res) => {
+    try {
+      const [result] = await pool.query(
+        "UPDATE eventos SET is_active = FALSE WHERE is_active = TRUE"
+      );
+
+      if (result.affectedRows === 0) {
+        // Isso pode acontecer se já não houver evento ativo, o que não é um erro grave.
+        return res
+          .status(200)
+          .json({ message: "Nenhum evento ativo para desativar." });
+      }
+
+      res.status(200).json({ message: "Evento desativado com sucesso!" });
+    } catch (error) {
+      console.error("Erro ao desativar evento:", error);
+      res.status(500).json({ message: "Erro interno do servidor." });
+    }
+  }
+);
+
 module.exports = router;
