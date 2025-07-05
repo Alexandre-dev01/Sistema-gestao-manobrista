@@ -48,29 +48,23 @@ document.addEventListener("DOMContentLoaded", () => {
     newRow.innerHTML = `
             <td class="prisma-cell">${vehicle.numero_ticket || ""}</td>
             <td><input type="text" class="ticket-input table-input" value="${
-              // Adicionado 'table-input'
               vehicle.numero_ticket || ""
-            }" ${isSaved ? "disabled" : ""}></td>
+            }" ${isSaved ? "disabled" : ""} placeholder="Ticket"></td>
             <td><input type="text" class="modelo-input table-input" value="${
-              // Adicionado 'table-input'
               vehicle.modelo || ""
-            }" ${isSaved ? "disabled" : ""}></td>
+            }" ${isSaved ? "disabled" : ""} placeholder="Modelo"></td>
             <td><input type="text" class="cor-input table-input" value="${
-              // Adicionado 'table-input'
               vehicle.cor || ""
-            }" ${isSaved ? "disabled" : ""}></td>
+            }" ${isSaved ? "disabled" : ""} placeholder="Cor"></td>
             <td><input type="text" class="placa-input table-input" value="${
-              // Adicionado 'table-input'
               vehicle.placa || ""
-            }" ${isSaved ? "disabled" : ""}></td>
+            }" ${isSaved ? "disabled" : ""} placeholder="Placa"></td>
             <td><input type="text" class="localizacao-input table-input" value="${
-              // Adicionado 'table-input'
               vehicle.localizacao || ""
-            }" ${isSaved ? "disabled" : ""}></td>
+            }" ${isSaved ? "disabled" : ""} placeholder="Localização"></td>
             <td><input type="text" class="observacoes-input table-input" value="${
-              // Adicionado 'table-input'
               vehicle.observacoes || ""
-            }" ${isSaved ? "disabled" : ""}></td>
+            }" ${isSaved ? "disabled" : ""} placeholder="Observações"></td>
             <td>
                 ${
                   !isSaved
@@ -88,7 +82,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isSaved) {
       newRow.addEventListener("click", (e) => {
         const targetIsInput = e.target.tagName === "INPUT";
-        if (targetIsInput && e.target.disabled) {
+        // Só permite clicar na linha se não estiver em modo de edição e se o clique for em um input desabilitado
+        if (
+          targetIsInput &&
+          e.target.disabled &&
+          !newRow.classList.contains("editing-row")
+        ) {
           Swal.fire({
             title: "Editar Veículo Registrado?",
             text: "Deseja editar as informações deste veículo? A alteração será salva.",
@@ -179,6 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const updates = [];
 
     for (const row of vehiclesTableBody.querySelectorAll("tr")) {
+      // Se a linha já foi salva e NÃO está em modo de edição, pule
       if (
         row.classList.contains("saved-row") &&
         !row.classList.contains("editing-row")
@@ -191,6 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const corInput = row.querySelector(".cor-input");
       const placaInput = row.querySelector(".placa-input");
 
+      // Se nenhum campo principal foi preenchido, pule a linha
       if (
         !modeloInput.value.trim() &&
         !corInput.value.trim() &&
@@ -204,6 +205,8 @@ document.addEventListener("DOMContentLoaded", () => {
         numero_ticket: ticketInput.value.trim(),
         modelo: modeloInput.value.trim(),
         cor: corInput.value.trim(),
+        // Acessa o valor não mascarado APENAS se o IMask foi aplicado.
+        // Se o input estiver desabilitado (linha salva), ele não terá _imask.
         placa: placaInput._imask
           ? placaInput._imask.unmaskedValue.toUpperCase()
           : placaInput.value.toUpperCase(),
@@ -214,6 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (id && row.classList.contains("editing-row")) {
         updates.push({ id, ...vehicleData });
       } else if (!id) {
+        // Se não tem ID, é uma nova inserção
         inserts.push(vehicleData);
       }
     }
@@ -235,13 +239,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     try {
+      // CORREÇÃO: Define o 'body' corretamente aqui
+      const body = { inserts, updates };
+
       const response = await fetch(`${API_BASE_URL}/api/veiculos/massa`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(body), // Usa o 'body' definido
       });
 
       if (!response.ok) {
@@ -274,176 +281,194 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  // Função para gerar o PDF do mapa de veículos
   async function generateVehicleMapPdf() {
+    // Adiciona o Swal.fire de confirmação
     Swal.fire({
-      title: "Gerando Mapa de Veículos...",
-      text: "Aguarde...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
+      title: "Gerar Mapa de Veículos?",
+      text: "Isso irá criar um PDF com os veículos listados na tabela.",
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "Sim, gerar!",
+      cancelButtonText: "Cancelar",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: "Gerando Mapa de Veículos...",
+          text: "Aguarde...",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading(),
+        });
 
-    try {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF("l", "mm", "a4"); // 'l' para layout paisagem (landscape)
+        try {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF("l", "mm", "a4"); // 'l' para layout paisagem (landscape)
 
-      // --- INFORMAÇÕES DO CABEÇALHO ---
-      doc.setFontSize(18);
-      doc.text(
-        "Mapa de Veículos - Evento: " + activeEventDetails.nome_evento,
-        14,
-        20
-      );
-      doc.setFontSize(10);
-      doc.text(
-        `Local: ${activeEventDetails.local_evento} | Data: ${new Date(
-          activeEventDetails.data_evento
-        ).toLocaleDateString("pt-BR")}`,
-        14,
-        28
-      );
+          // --- INFORMAÇÕES DO CABEÇALHO ---
+          doc.setFontSize(18);
+          doc.text(
+            "Mapa de Veículos - Evento: " + activeEventDetails.nome_evento,
+            14,
+            20
+          );
+          doc.setFontSize(10);
+          doc.text(
+            `Local: ${activeEventDetails.local_evento} | Data: ${new Date(
+              activeEventDetails.data_evento
+            ).toLocaleDateString("pt-BR")}`,
+            14,
+            28
+          );
 
-      // Adiciona Horário do Evento (se disponível)
-      if (activeEventDetails.hora_inicio && activeEventDetails.hora_fim) {
-        doc.text(
-          `Horário: ${activeEventDetails.hora_inicio} - ${activeEventDetails.hora_fim}`,
-          14,
-          35
-        );
-      } else if (activeEventDetails.hora_inicio) {
-        doc.text(
-          `Horário de Início: ${activeEventDetails.hora_inicio}`,
-          14,
-          35
-        );
-      } else if (activeEventDetails.hora_fim) {
-        doc.text(`Horário de Término: ${activeEventDetails.hora_fim}`, 14, 35);
-      }
-
-      // Adiciona Data de Término do Evento (se diferente da data de início)
-      if (
-        activeEventDetails.data_fim &&
-        activeEventDetails.data_fim !== activeEventDetails.data_evento
-      ) {
-        doc.text(
-          `Data de Término: ${new Date(
-            activeEventDetails.data_fim
-          ).toLocaleDateString("pt-BR")}`,
-          14,
-          42
-        );
-      }
-
-      // --- DADOS DA TABELA ---
-      const tableHeaders = [
-        [
-          "Prisma",
-          "Ticket",
-          "Modelo",
-          "Cor",
-          "Placa",
-          "Localização",
-          "Observações",
-        ],
-      ];
-
-      const tableBody = [];
-      let totalVehicles = 0; // Contador para o total de veículos
-      vehiclesTableBody.querySelectorAll("tr").forEach((row) => {
-        if (row.style.display !== "none") {
-          const ticket = row.querySelector(".ticket-input").value || "";
-          const modelo = row.querySelector(".modelo-input").value || "";
-          const cor = row.querySelector(".cor-input").value || "";
-          const placa = row.querySelector(".placa-input").value || "";
-          const localizacao =
-            row.querySelector(".localizacao-input").value || "";
-          const observacoes =
-            row.querySelector(".observacoes-input").value || "";
-          const prisma = row.querySelector(".prisma-cell").textContent || "";
-
-          // Inclui apenas linhas que tenham pelo menos um campo principal preenchido
-          if (modelo || cor || placa || localizacao || observacoes) {
-            tableBody.push([
-              prisma,
-              ticket,
-              modelo,
-              cor,
-              placa,
-              localizacao,
-              observacoes,
-            ]);
-            totalVehicles++; // Incrementa o contador
+          // Adiciona Horário do Evento (se disponível)
+          if (activeEventDetails.hora_inicio && activeEventDetails.hora_fim) {
+            doc.text(
+              `Horário: ${activeEventDetails.hora_inicio} - ${activeEventDetails.hora_fim}`,
+              14,
+              35
+            );
+          } else if (activeEventDetails.hora_inicio) {
+            doc.text(
+              `Horário de Início: ${activeEventDetails.hora_inicio}`,
+              14,
+              35
+            );
+          } else if (activeEventDetails.hora_fim) {
+            doc.text(
+              `Horário de Término: ${activeEventDetails.hora_fim}`,
+              14,
+              35
+            );
           }
+
+          // Adiciona Data de Término do Evento (se diferente da data de início)
+          if (
+            activeEventDetails.data_fim &&
+            activeEventDetails.data_fim !== activeEventDetails.data_evento
+          ) {
+            doc.text(
+              `Data de Término: ${new Date(
+                activeEventDetails.data_fim
+              ).toLocaleDateString("pt-BR")}`,
+              14,
+              42
+            );
+          }
+
+          // --- DADOS DA TABELA ---
+          const tableHeaders = [
+            [
+              "Prisma",
+              "Ticket",
+              "Modelo",
+              "Cor",
+              "Placa",
+              "Localização",
+              "Observações",
+            ],
+          ];
+
+          const tableBody = [];
+          let totalVehicles = 0; // Contador para o total de veículos
+          vehiclesTableBody.querySelectorAll("tr").forEach((row) => {
+            if (row.style.display !== "none") {
+              const ticket = row.querySelector(".ticket-input").value || "";
+              const modelo = row.querySelector(".modelo-input").value || "";
+              const cor = row.querySelector(".cor-input").value || "";
+              const placa = row.querySelector(".placa-input").value || "";
+              const localizacao =
+                row.querySelector(".localizacao-input").value || "";
+              const observacoes =
+                row.querySelector(".observacoes-input").value || "";
+              const prisma =
+                row.querySelector(".prisma-cell").textContent || "";
+
+              // Inclui apenas linhas que tenham pelo menos um campo principal preenchido
+              if (modelo || cor || placa || localizacao || observacoes) {
+                tableBody.push([
+                  prisma,
+                  ticket,
+                  modelo,
+                  cor,
+                  placa,
+                  localizacao,
+                  observacoes,
+                ]);
+                totalVehicles++; // Incrementa o contador
+              }
+            }
+          });
+
+          doc.autoTable({
+            head: tableHeaders,
+            body: tableBody,
+            startY: 50, // Ajusta o startY para dar espaço às novas informações
+            theme: "grid",
+            styles: {
+              fontSize: 8,
+              cellPadding: 1.5,
+              overflow: "linebreak",
+              valign: "middle",
+              halign: "center",
+            },
+            headStyles: {
+              fillColor: [15, 52, 96],
+              textColor: 255,
+              fontSize: 9,
+              fontStyle: "bold",
+              halign: "center",
+            },
+            columnStyles: {
+              0: { cellWidth: 15 }, // Prisma
+              1: { cellWidth: 15 }, // Ticket
+              2: { cellWidth: 30 }, // Modelo
+              3: { cellWidth: 20 }, // Cor
+              4: { cellWidth: 25 }, // Placa
+              5: { cellWidth: 30 }, // Localização
+              6: { cellWidth: 60 }, // Observações
+            },
+            // Adiciona o rodapé com informações de geração
+            didDrawPage: function (data) {
+              doc.setFontSize(8);
+              const pageCount = doc.internal.getNumberOfPages();
+              doc.text(
+                `Página ${data.pageNumber} de ${pageCount}`,
+                data.settings.margin.left,
+                doc.internal.pageSize.height - 10
+              );
+              doc.text(
+                `Gerado por: ${
+                  user.nome_usuario
+                } em ${new Date().toLocaleString("pt-BR")}`,
+                doc.internal.pageSize.width - data.settings.margin.right,
+                doc.internal.pageSize.height - 10,
+                { align: "right" }
+              );
+              doc.text(
+                `Total de Veículos no Mapa: ${totalVehicles}`,
+                data.settings.margin.left,
+                doc.internal.pageSize.height - 5
+              );
+            },
+          });
+
+          doc.save(
+            `Mapa_Veiculos_${activeEventDetails.nome_evento.replace(
+              /\s+/g,
+              "_"
+            )}.pdf`
+          );
+          Swal.close();
+        } catch (error) {
+          console.error("Erro ao gerar PDF do mapa de veículos:", error);
+          Swal.fire(
+            "Erro!",
+            "Não foi possível gerar o mapa de veículos. " + error.message,
+            "error"
+          );
         }
-      });
-
-      doc.autoTable({
-        head: tableHeaders,
-        body: tableBody,
-        startY: 50, // Ajusta o startY para dar espaço às novas informações
-        theme: "grid",
-        styles: {
-          fontSize: 8,
-          cellPadding: 1.5,
-          overflow: "linebreak",
-          valign: "middle",
-          halign: "center",
-        },
-        headStyles: {
-          fillColor: [15, 52, 96],
-          textColor: 255,
-          fontSize: 9,
-          fontStyle: "bold",
-          halign: "center",
-        },
-        columnStyles: {
-          0: { cellWidth: 15 }, // Prisma
-          1: { cellWidth: 15 }, // Ticket
-          2: { cellWidth: 30 }, // Modelo
-          3: { cellWidth: 20 }, // Cor
-          4: { cellWidth: 25 }, // Placa
-          5: { cellWidth: 30 }, // Localização
-          6: { cellWidth: 60 }, // Observações
-        },
-        // Adiciona o rodapé com informações de geração
-        didDrawPage: function (data) {
-          doc.setFontSize(8);
-          const pageCount = doc.internal.getNumberOfPages();
-          doc.text(
-            `Página ${data.pageNumber} de ${pageCount}`,
-            data.settings.margin.left,
-            doc.internal.pageSize.height - 10
-          );
-          doc.text(
-            `Gerado por: ${user.nome_usuario} em ${new Date().toLocaleString(
-              "pt-BR"
-            )}`,
-            doc.internal.pageSize.width - data.settings.margin.right,
-            doc.internal.pageSize.height - 10,
-            { align: "right" }
-          );
-          doc.text(
-            `Total de Veículos no Mapa: ${totalVehicles}`,
-            data.settings.margin.left,
-            doc.internal.pageSize.height - 5
-          );
-        },
-      });
-
-      doc.save(
-        `Mapa_Veiculos_${activeEventDetails.nome_evento.replace(
-          /\s+/g,
-          "_"
-        )}.pdf`
-      );
-      Swal.close();
-    } catch (error) {
-      console.error("Erro ao gerar PDF do mapa de veículos:", error);
-      Swal.fire(
-        "Erro!",
-        "Não foi possível gerar o mapa de veículos. " + error.message,
-        "error"
-      );
-    }
+      }
+    });
   }
 
   const clearEmptyRows = () => {
