@@ -79,7 +79,7 @@ router.post(
   }
 );
 
-// --- NOVA ROTA PARA REGISTRO E ATUALIZAÇÃO EM MASSA ---
+// --- ROTA PARA REGISTRO E ATUALIZAÇÃO EM MASSA (CORRIGIDA) ---
 router.post(
   "/massa",
   auth,
@@ -97,6 +97,33 @@ router.post(
       // Processa as inserções
       if (inserts && inserts.length > 0) {
         for (const veiculo of inserts) {
+          const cleanedPlaca = String(veiculo.placa || "") // Garante que placa seja string
+            .replace(/[^a-zA-Z0-9]/g, "")
+            .toUpperCase();
+
+          // Validações para cada veículo a ser inserido
+          if (
+            !veiculo.evento_id ||
+            !veiculo.numero_ticket || // Ticket pode ser '01', '02' etc.
+            !veiculo.modelo ||
+            !veiculo.cor ||
+            !cleanedPlaca ||
+            !veiculo.localizacao
+          ) {
+            results.errors.push({
+              ticket: veiculo.numero_ticket || "N/A",
+              message: "Campos obrigatórios ausentes para inserção.",
+            });
+            continue; // Pula para o próximo veículo
+          }
+          if (cleanedPlaca.length !== 7) {
+            results.errors.push({
+              ticket: veiculo.numero_ticket,
+              message: "Placa deve ter exatamente 7 caracteres para inserção.",
+            });
+            continue; // Pula para o próximo veículo
+          }
+
           const [existing] = await connection.query(
             "SELECT id FROM veiculos WHERE evento_id = ? AND numero_ticket = ?",
             [veiculo.evento_id, veiculo.numero_ticket]
@@ -104,60 +131,122 @@ router.post(
           if (existing.length > 0) {
             results.errors.push({
               ticket: veiculo.numero_ticket,
-              message: "Ticket já existe.",
+              message: "Número de ticket já utilizado para este evento.",
             });
-            continue;
+            continue; // Pula para o próximo veículo
           }
-          const [result] = await connection.query(
-            "INSERT INTO veiculos (evento_id, numero_ticket, modelo, cor, placa, localizacao, observacoes, hora_entrada, usuario_entrada_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-              veiculo.evento_id,
-              veiculo.numero_ticket,
-              veiculo.modelo,
-              veiculo.cor,
-              veiculo.placa,
-              veiculo.localizacao,
-              veiculo.observacoes,
-              new Date(),
-              usuario_id,
-            ]
-          );
-          results.created.push({
-            id: result.insertId,
-            numero_ticket: veiculo.numero_ticket,
-          });
+
+          try {
+            const [result] = await connection.query(
+              "INSERT INTO veiculos (evento_id, numero_ticket, modelo, cor, placa, localizacao, observacoes, hora_entrada, usuario_entrada_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              [
+                veiculo.evento_id,
+                veiculo.numero_ticket,
+                veiculo.modelo,
+                veiculo.cor,
+                cleanedPlaca,
+                veiculo.localizacao,
+                veiculo.observacoes || null, // Observações podem ser nulas
+                new Date(),
+                usuario_id,
+              ]
+            );
+            results.created.push({
+              id: result.insertId,
+              numero_ticket: veiculo.numero_ticket,
+            });
+          } catch (dbError) {
+            console.error(
+              `[VEICULOS MASSA] Erro ao inserir veículo ${veiculo.numero_ticket}:`,
+              dbError
+            );
+            results.errors.push({
+              ticket: veiculo.numero_ticket,
+              message: `Erro ao inserir: ${dbError.message}`,
+            });
+          }
         }
       }
 
       // Processa as atualizações
       if (updates && updates.length > 0) {
         for (const veiculo of updates) {
-          await connection.query(
-            "UPDATE veiculos SET modelo = ?, cor = ?, placa = ?, localizacao = ?, observacoes = ? WHERE id = ? AND evento_id = ?",
-            [
-              veiculo.modelo,
-              veiculo.cor,
-              veiculo.placa,
-              veiculo.localizacao,
-              veiculo.observacoes,
-              veiculo.id,
-              veiculo.evento_id,
-            ]
-          );
-          results.updated.push({
-            id: veiculo.id,
-            numero_ticket: veiculo.numero_ticket,
-          });
+          const cleanedPlaca = String(veiculo.placa || "")
+            .replace(/[^a-zA-Z0-9]/g, "")
+            .toUpperCase();
+
+          // Validações para cada veículo a ser atualizado
+          if (
+            !veiculo.id || // ID do veículo é obrigatório para atualização
+            !veiculo.evento_id ||
+            !veiculo.numero_ticket ||
+            !veiculo.modelo ||
+            !veiculo.cor ||
+            !cleanedPlaca ||
+            !veiculo.localizacao
+          ) {
+            results.errors.push({
+              ticket: veiculo.numero_ticket || "N/A",
+              message: "Campos obrigatórios ausentes para atualização.",
+            });
+            continue; // Pula para o próximo veículo
+          }
+          if (cleanedPlaca.length !== 7) {
+            results.errors.push({
+              ticket: veiculo.numero_ticket,
+              message:
+                "Placa deve ter exatamente 7 caracteres para atualização.",
+            });
+            continue; // Pula para o próximo veículo
+          }
+
+          try {
+            await connection.query(
+              "UPDATE veiculos SET modelo = ?, cor = ?, placa = ?, localizacao = ?, observacoes = ? WHERE id = ? AND evento_id = ?",
+              [
+                veiculo.modelo,
+                veiculo.cor,
+                cleanedPlaca,
+                veiculo.localizacao,
+                veiculo.observacoes || null, // Observações podem ser nulas
+                veiculo.id,
+                veiculo.evento_id,
+              ]
+            );
+            results.updated.push({
+              id: veiculo.id,
+              numero_ticket: veiculo.numero_ticket,
+            });
+          } catch (dbError) {
+            console.error(
+              `[VEICULOS MASSA] Erro ao atualizar veículo ${veiculo.numero_ticket}:`,
+              dbError
+            );
+            results.errors.push({
+              ticket: veiculo.numero_ticket,
+              message: `Erro ao atualizar: ${dbError.message}`,
+            });
+          }
         }
       }
 
       await connection.commit();
+
+      if (results.errors.length > 0) {
+        // Se houver erros, retorna 200 OK mas com a lista de erros
+        // Isso permite que o frontend mostre quais veículos falharam
+        return res.status(200).json({
+          message: "Operação em massa concluída com algumas falhas.",
+          results: results,
+        });
+      }
+
       res
         .status(200)
         .json({ message: "Operação em massa concluída com sucesso!", results });
     } catch (error) {
       await connection.rollback();
-      console.error("[VEICULOS] Erro na operação em massa:", error);
+      console.error("[VEICULOS] Erro na operação em massa (transação):", error);
       res
         .status(500)
         .json({ message: "Erro interno do servidor ao processar os dados." });
@@ -167,7 +256,7 @@ router.post(
   }
 );
 
-// Rota para Listar Veículos de um Evento Específico (sem alterações)
+// Rota para Listar Veículos de um Evento Específico
 router.get(
   "/evento/:idEvento",
   auth,

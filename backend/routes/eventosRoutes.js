@@ -80,17 +80,14 @@ router.get(
 router.post("/", auth, authorize("admin"), async (req, res) => {
   const {
     nome_evento,
-    data_evento, // Data de início
-    data_fim, // Data de término
-    hora_inicio, // Hora de início
-    hora_fim, // Hora de término
+    data_evento,
+    data_fim,
+    hora_inicio,
+    hora_fim,
     local_evento,
     descricao,
   } = req.body;
 
-  // --- VALIDAÇÕES DE CAMPOS OBRIGATÓRIOS ---
-  // Ajustado para considerar que data_fim, hora_inicio e hora_fim podem ser opcionais
-  // dependendo da lógica de negócio, mas para o seu caso, estão sendo enviados.
   if (!nome_evento || !data_evento || !local_evento) {
     return res.status(400).json({
       message: "Nome, data de início e local do evento são obrigatórios.",
@@ -103,12 +100,15 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
       .status(400)
       .json({ message: "Nome do evento deve ter entre 3 e 100 caracteres." });
   }
-  if (!/^[a-zA-Z0-9\s-]+$/.test(nome_evento)) {
+
+  // ALTERADO: Expressão regular para aceitar letras com acentuação, números, espaços e hífens.
+  if (!/^[\p{L}\p{N}\s-]+$/u.test(nome_evento)) {
     return res.status(400).json({
       message:
-        "Nome do evento contém caracteres inválidos. Use letras, números, espaços e hífens.",
+        "Nome do evento contém caracteres inválidos. Use apenas letras, números, espaços e hífens.",
     });
   }
+
   if (/^\d+$/.test(nome_evento)) {
     return res
       .status(400)
@@ -121,7 +121,9 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
       .status(400)
       .json({ message: "Local do evento deve ter entre 3 e 100 caracteres." });
   }
-  if (!/^[a-zA-Z0-9\s,.\-áàâãéèêíóôõúüçÁÀÂÃÉÈÍÓÔÕÚÜÇ]+$/.test(local_evento)) {
+
+  // ALTERADO: Expressão regular para aceitar letras com acentuação, números, espaços e outros caracteres comuns em endereços.
+  if (!/^[\p{L}\p{N}\s,.-]+$/u.test(local_evento)) {
     return res
       .status(400)
       .json({ message: "Local do evento contém caracteres inválidos." });
@@ -136,16 +138,15 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
 
   // --- VALIDAÇÃO DE DATAS E HORAS ---
   const now = new Date();
-  now.setSeconds(0, 0); // Zera segundos e milissegundos para comparação precisa
+  now.setSeconds(0, 0);
 
   const eventStartDate = new Date(data_evento);
-  eventStartDate.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas a data
+  eventStartDate.setHours(0, 0, 0, 0);
 
-  let finalDataFim = data_fim || data_evento; // Se data_fim não for fornecida, usa data_evento
+  let finalDataFim = data_fim || data_evento;
   const eventEndDate = new Date(finalDataFim);
   eventEndDate.setHours(0, 0, 0, 0);
 
-  // Validação de formato de hora (HH:MM)
   const timeRegex = /^(?:2[0-3]|[01]?[0-9]):[0-5][0-9]$/;
   if (
     (hora_inicio && !timeRegex.test(hora_inicio)) ||
@@ -156,19 +157,15 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
       .json({ message: "Formato de hora inválido. Use HH:MM." });
   }
 
-  // Combina data e hora para criar objetos Date completos para comparação
-  // Assume que hora_inicio e hora_fim são sempre fornecidos pelo frontend agora
   const eventStartDateTime = new Date(`${data_evento}T${hora_inicio}:00`);
   const eventEndDateTime = new Date(`${finalDataFim}T${hora_fim}:00`);
 
-  // 1. Validação: Data de fim não pode ser anterior à data de início
   if (eventEndDate < eventStartDate) {
     return res.status(400).json({
       message: "A data de fim não pode ser anterior à data de início.",
     });
   }
 
-  // 2. Validação: Se as datas de início e fim são as mesmas, a hora de fim deve ser posterior à hora de início
   if (eventEndDate.getTime() === eventStartDate.getTime()) {
     if (eventEndDateTime <= eventStartDateTime) {
       return res.status(400).json({
@@ -178,7 +175,6 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
     }
   }
 
-  // 3. Validação: Data de início do evento não pode ser passada
   const todayDateOnly = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -190,11 +186,8 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
     });
   }
 
-  // 4. Validação: Se o evento começa HOJE, a hora de início não pode ser passada
-  // Compara a data de início do evento com a data de hoje. Se for hoje, compara as horas.
   if (eventStartDate.getTime() === todayDateOnly.getTime()) {
     if (eventStartDateTime < now) {
-      // now já tem segundos e milissegundos zerados
       return res.status(400).json({
         message:
           "Para eventos que começam hoje, a hora de início não pode ser passada.",
@@ -202,10 +195,9 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
     }
   }
 
-  // 5. Validação: Limitar a criação de eventos com no máximo 12 meses de antecedência (baseado na data de início)
   const maxFutureDate = new Date();
   maxFutureDate.setFullYear(maxFutureDate.getFullYear() + 1);
-  maxFutureDate.setHours(23, 59, 59, 999); // Define para o final do dia do próximo ano
+  maxFutureDate.setHours(23, 59, 59, 999);
 
   if (eventStartDateTime > maxFutureDate) {
     return res.status(400).json({
@@ -220,7 +212,7 @@ router.post("/", auth, authorize("admin"), async (req, res) => {
       [
         nome_evento,
         data_evento,
-        finalDataFim, // Usa a data de fim ajustada
+        finalDataFim,
         hora_inicio,
         hora_fim,
         local_evento,
@@ -264,7 +256,6 @@ router.put(
       if (result.affectedRows === 0) {
         return res.status(404).json({ message: "Evento não encontrado." });
       }
-      // Após ativar, busca os detalhes completos do evento para retornar ao frontend
       const [activatedEvent] = await connection.query(
         "SELECT * FROM eventos WHERE id = ?",
         [id]
@@ -287,7 +278,6 @@ router.put(
 router.delete("/:id", auth, authorize("admin"), async (req, res) => {
   const { id } = req.params;
   try {
-    // Verificar se o evento está ativo antes de excluir
     const [eventos] = await pool.query(
       "SELECT is_active FROM eventos WHERE id = ?",
       [id]
@@ -302,9 +292,7 @@ router.delete("/:id", auth, authorize("admin"), async (req, res) => {
       });
     }
 
-    // Excluir veículos associados primeiro (se houver CASCADE no DB, não precisa)
     await pool.query("DELETE FROM veiculos WHERE evento_id = ?", [id]);
-
     const [result] = await pool.query("DELETE FROM eventos WHERE id = ?", [id]);
 
     if (result.affectedRows === 0) {
