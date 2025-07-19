@@ -10,6 +10,7 @@ const { auth } = require("./middleware/authMiddleware");
 const authRoutes = require("./routes/authRoutes");
 const eventosRoutes = require("./routes/eventosRoutes");
 const veiculosRoutes = require("./routes/veiculosRoutes");
+const analiseRoutes = require("./routes/analiseRoutes");
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/eventos", eventosRoutes);
 app.use("/api/veiculos", veiculosRoutes);
+app.use("/api/analise", analiseRoutes);
 
 // --- LÓGICA PARA O DEPLOY NA RENDER ---
 if (require.main === module) {
