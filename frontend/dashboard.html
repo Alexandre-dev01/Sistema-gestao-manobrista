@@ -18,14 +18,6 @@
 
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <header>
@@ -50,20 +42,33 @@
         style="display: none"
       >
         <h2><i class="fas fa-calendar-check"></i> Evento Ativo</h2>
-        <p><strong>Nome:</strong> <span id="activeEventName"></span></p>
-        <p><strong>Local:</strong> <span id="activeEventLocation"></span></p>
-        <p><strong>Data:</strong> <span id="activeEventDate"></span></p>
-        <p><strong>Horário:</strong> <span id="activeEventTime"></span></p>
-        <p style="display: none">
-          <strong>Término:</strong> <span id="activeEventEndDate"></span>
-        </p>
+        <div class="event-details-grid">
+          <p>
+            <strong><i class="fas fa-signature"></i>Nome:</strong>
+            <span id="activeEventName"></span>
+          </p>
+          <p>
+            <strong><i class="fas fa-map-marker-alt"></i>Local:</strong>
+            <span id="activeEventLocation"></span>
+          </p>
+          <p>
+            <strong><i class="fas fa-calendar-day"></i>Data:</strong>
+            <span id="activeEventDate"></span>
+          </p>
+          <p>
+            <strong><i class="fas fa-clock"></i>Horário:</strong>
+            <span id="activeEventTime"></span>
+          </p>
+        </div>
       </div>
 
       <button id="changeEventBtn" class="btn-primary">
         <i class="fas fa-exchange-alt"></i> Selecionar/Trocar Evento Ativo
       </button>
 
-      <div id="statsContainer" class="stats-grid" style="display: none"></div>
+      <div id="statsContainer" class="stats-grid" style="display: none">
+        <!-- Cards de estatísticas serão inseridos aqui via JS -->
+      </div>
 
       <div class="card-container">
         <div class="card" id="cardEventos">
@@ -85,6 +90,11 @@
           <i class="fas fa-car-side card-icon"></i>
           <h2>Registro em Massa</h2>
           <p>Registre múltiplos veículos.</p>
+        </div>
+        <div class="card" id="cardAnaliseConflitos">
+          <i class="fas fa-binoculars card-icon"></i>
+          <h2>Análise de Veículos</h2>
+          <p>Verifique veículos recorrentes em eventos.</p>
         </div>
         <div class="card" id="cardCadastrarUsuario">
           <i class="fas fa-user-plus card-icon"></i>

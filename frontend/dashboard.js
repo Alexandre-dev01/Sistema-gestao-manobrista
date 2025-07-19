@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
     registrarEntrada: document.getElementById("cardRegistrarEntrada"),
     consultaVeiculos: document.getElementById("cardConsultaVeiculos"),
     registroMassa: document.getElementById("cardRegistroMassa"),
+    analiseConflitos: document.getElementById("cardAnaliseConflitos"),
     cadastrarUsuario: document.getElementById("cardCadastrarUsuario"),
   };
 
@@ -44,6 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (cards.consultaVeiculos)
           cards.consultaVeiculos.style.display = "block";
         if (cards.registroMassa) cards.registroMassa.style.display = "block";
+        if (cards.analiseConflitos)
+          cards.analiseConflitos.style.display = "block";
+
         break;
       case "manobrista":
         if (cards.registrarEntrada)
@@ -217,6 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
           registrarEntrada: "entrada_veiculo.html",
           consultaVeiculos: "consulta_veiculos.html",
           registroMassa: "registro_massa_veiculos.html",
+          analiseConflitos: "analise.html",
           cadastrarUsuario: "cadastro_usuario.html",
         };
         if (pageMap[key]) window.location.href = pageMap[key];
