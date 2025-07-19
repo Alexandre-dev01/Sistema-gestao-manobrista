@@ -3,10 +3,10 @@
 .vscode/
 
 # Dependências do Node.js (pasta gigante e desnecessária)
-/backend/node_modules/
+/api/node_modules/
 
 # Arquivos de ambiente com senhas e segredos
-/backend/.env
+/api/.env
 
 # Logs e arquivos temporários
 *.log

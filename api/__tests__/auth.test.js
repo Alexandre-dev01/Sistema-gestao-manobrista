@@ -1,8 +1,8 @@
 // __tests__/auth.test.js
 
 const request = require("supertest");
-const app = require("../server"); // Importa o app do server.js
-const pool = require("../config/db"); // --- ALTERAÇÃO: Importa o pool do banco de dados
+const app = require("../../backend/server"); // Importa o app do server.js
+const pool = require("../../backend/config/db"); // --- ALTERAÇÃO: Importa o pool do banco de dados
 
 // Hook do Jest que é executado uma vez, depois de todos os testes neste arquivo
 afterAll(async () => {
