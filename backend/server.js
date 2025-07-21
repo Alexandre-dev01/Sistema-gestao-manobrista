@@ -1,5 +1,3 @@
-// backend/server.js (VERSÃO FINAL COM CORS PARA AMBOS AMBIENTES)
-
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
