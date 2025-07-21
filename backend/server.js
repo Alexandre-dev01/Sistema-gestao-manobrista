@@ -1,8 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const pool = require("./config/db");
-const { auth } = require("./middleware/authMiddleware");
+const pool = require("./config/db"); // Apenas para garantir que a conexão inicie
 
 // Importação das rotas
 const authRoutes = require("./routes/authRoutes");
@@ -12,46 +11,47 @@ const analiseRoutes = require("./routes/analiseRoutes");
 
 const app = express();
 
-// --- CORREÇÃO IMPORTANTE AQUI (CONFIGURAÇÃO DO CORS) ---
-// Lista de endereços (origens) que têm permissão para acessar esta API
+// --- CONFIGURAÇÃO DE CORS
+// Lista de endereços (origens) que têm permissão para acessar esta API.
 const allowedOrigins = [
-  "https://jade-puppy-cbd850.netlify.app", // Seu site em produção
-  "http://127.0.0.1:5500", // Endereço comum do Live Server do VS Code
-  "http://localhost:5500", // Outro endereço comum para o Live Server
+  "https://jade-puppy-cbd850.netlify.app", // A URL do seu frontend no Netlify
+  "http://127.0.0.1:5500", // Para testes locais com Live Server
+  "http://localhost:5500", // Alternativa para testes locais
 ];
 
-// Configura o CORS para aceitar requisições apenas das origens na lista
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permite requisições sem 'origin' (como Postman) ou se a origem estiver na lista de permissões.
+    // Permite requisições da mesma origem (undefined), da lista de permissões, ou de ferramentas como Postman.
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error("Não permitido pela política de CORS"));
+      callback(new Error("Acesso não permitido pela política de CORS"));
     }
   },
-  methods: ["GET", "POST", "PUT", "DELETE"], // Métodos HTTP permitidos
-  allowedHeaders: ["Content-Type", "Authorization"], // Cabeçalhos permitidos
+  methods: ["GET", "POST", "PUT", "DELETE"], // Métodos HTTP que seu frontend pode usar
+  allowedHeaders: ["Content-Type", "Authorization"], // Cabeçalhos que o frontend pode enviar
 };
 
-// Aplica o middleware do CORS com as opções configuradas
+// **1. APLICA O CORS PRIMEIRO:**
 app.use(cors(corsOptions));
-// --- FIM DA CORREÇÃO ---
 
+// **2. PREPARA PARA RECEBER JSON:**
 app.use(express.json());
 
-// --- ROTAS DA API ---
+// **3. DEFINE AS ROTAS DA API:**
 app.use("/api/auth", authRoutes);
 app.use("/api/eventos", eventosRoutes);
 app.use("/api/veiculos", veiculosRoutes);
 app.use("/api/analise", analiseRoutes);
 
-// --- LÓGICA PARA O DEPLOY NA RENDER ---
-if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-  });
-}
+// **4. ROTA DE TESTE BÁSICA:**
+app.get("/", (req, res) => {
+  res.send("API do Sistema de Manobristas está no ar!");
+});
 
-module.exports = app;
+// **5. INICIA O SERVIDOR:**
+// O Railway fornecerá a porta através da variável de ambiente PORT.
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
