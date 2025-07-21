@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const actionButtons = isActive
             ? `
               <button class="deactivate-event-btn" data-event-id="${event.id}">Desativar</button>
-              <button class="delete-event" data-event-id="${event.id}" disabled title="Desative o evento para poder excluir">Excluir</button>
+            <button class="delete-event" data-event-id="${event.id}" data-is-active="true">Excluir</button>
             `
             : `
               <button class="set-active-btn" data-event-id="${
@@ -168,50 +168,65 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".delete-event").forEach((button) => {
       button.addEventListener("click", (e) => {
         const eventId = e.target.dataset.eventId;
-        Swal.fire({
-          title: "Tem certeza?",
-          text: "Esta ação é irreversível e excluirá o evento e todos os veículos associados!",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "Sim, excluir!",
-          cancelButtonText: "Cancelar",
-        }).then(async (result) => {
-          if (result.isConfirmed) {
-            try {
-              const response = await fetch(
-                `${API_BASE_URL}/api/eventos/${eventId}`,
-                {
-                  method: "DELETE",
-                  headers: { Authorization: `Bearer ${token}` },
+        const isActive = e.target.dataset.isActive === "true"; // Verifica o status pelo atributo
+
+        if (isActive) {
+          // Se o evento estiver ATIVO, mostra o alerta informativo.
+          Swal.fire({
+            title: "Ação Necessária",
+            text: "Este evento está ativo e não pode ser excluído. Você precisa desativá-lo primeiro.",
+            icon: "info",
+            confirmButtonText: "Entendi",
+          });
+        } else {
+          // Se o evento estiver INATIVO, mostra o alerta de confirmação de exclusão.
+          Swal.fire({
+            title: "Tem certeza?",
+            text: "Esta ação é irreversível e excluirá o evento e todos os veículos associados!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Sim, excluir!",
+            cancelButtonText: "Cancelar",
+          }).then(async (result) => {
+            if (result.isConfirmed) {
+              // A lógica de exclusão que já funciona bem
+              try {
+                const response = await fetch(
+                  `${API_BASE_URL}/api/eventos/${eventId}`,
+                  {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${token}` },
+                  }
+                );
+                const data = await response.json();
+                if (response.ok) {
+                  Swal.fire("Excluído!", data.message, "success");
+                  if (localStorage.getItem("activeEventId") == eventId) {
+                    localStorage.removeItem("activeEventId");
+                    localStorage.removeItem("activeEventDetails");
+                  }
+                  loadEvents();
+                } else {
+                  Swal.fire(
+                    "Erro!",
+                    data.message || "Erro ao excluir evento.",
+                    "error"
+                  );
                 }
-              );
-              const data = await response.json();
-              if (response.ok) {
-                Swal.fire("Excluído!", data.message, "success");
-                if (localStorage.getItem("activeEventId") == eventId) {
-                  localStorage.removeItem("activeEventId");
-                  localStorage.removeItem("activeEventDetails");
-                }
-                loadEvents();
-              } else {
+              } catch (error) {
                 Swal.fire(
-                  "Erro!",
-                  data.message || "Erro ao excluir evento.",
+                  "Erro de Conexão",
+                  "Não foi possível conectar ao servidor.",
                   "error"
                 );
               }
-            } catch (error) {
-              Swal.fire(
-                "Erro de Conexão",
-                "Não foi possível conectar ao servidor.",
-                "error"
-              );
             }
-          }
-        });
+          });
+        }
       });
     });
-
     document.querySelectorAll(".report-btn").forEach((button) => {
       button.addEventListener("click", (e) => {
         const eventId = e.target.dataset.eventId;
