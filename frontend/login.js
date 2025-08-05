@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
         title: "Erro de Login",
         text: "Nome de usuário deve ter entre 3 e 30 caracteres.",
       });
+      playNotificationSound("error");
       return;
     }
 
@@ -23,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
         title: "Erro de Login",
         text: "Senha deve ter entre 6 e 60 caracteres.",
       });
-      return;
+      playNotificationSound("error");
     }
 
     Swal.fire({
@@ -82,12 +83,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }).then(() => {
           window.location.href = "dashboard.html";
         });
+        playNotificationSound("success");
       } else {
         Swal.fire({
           icon: "error",
           title: "Falha no Login",
           text: data.message || "Usuário ou senha inválidos.",
         });
+        playNotificationSound("error");
       }
     } catch (error) {
       console.error("Erro de rede ou servidor:", error);
@@ -96,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
         title: "Erro de Conexão",
         text: "Não foi possível conectar ao servidor. Tente novamente.",
       });
+      playNotificationSound("error");
     }
   });
 });

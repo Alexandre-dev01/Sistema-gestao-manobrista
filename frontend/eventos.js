@@ -81,6 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
           data.message || "Erro ao carregar eventos.",
           "error"
         );
+        playNotificationSound("error");
       }
     } catch (error) {
       Swal.fire(
@@ -88,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "Não foi possível conectar ao servidor.",
         "error"
       );
+      playNotificationSound("error");
     }
   }
 
@@ -105,19 +107,16 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           );
           if (!response.ok) throw new Error("Falha ao ativar o evento.");
-          localStorage.setItem("activeEventId", eventId);
-          localStorage.setItem(
-            "activeEventDetails",
-            JSON.stringify(eventDetails)
-          );
-          Swal.fire(
-            "Evento Ativado!",
-            `O evento "${eventDetails.nome_evento}" agora está ativo.`,
-            "success"
-          );
+          // ...
+          showThemedSuccess({
+            title: "Evento Ativado!",
+            text: `O evento "${eventDetails.nome_evento}" agora está ativo.`,
+          });
+          playNotificationSound("success");
           loadEvents();
         } catch (error) {
-          Swal.fire("Erro!", error.message, "error");
+          showThemedError({ title: "Erro!", text: error.message });
+          playNotificationSound("error");
         }
       });
     });
@@ -144,6 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
               );
               const data = await response.json();
+
               if (!response.ok) {
                 throw new Error(data.message || "Erro ao desativar evento.");
               }
@@ -156,30 +156,32 @@ document.addEventListener("DOMContentLoaded", () => {
                 data.message || "O evento foi desativado com sucesso.",
                 "success"
               );
+              playNotificationSound("success");
               loadEvents();
             } catch (error) {
               Swal.fire("Erro!", error.message, "error");
+              playNotificationSound("error");
             }
           }
         });
+        playNotificationSound("notification");
       });
     });
 
     document.querySelectorAll(".delete-event").forEach((button) => {
       button.addEventListener("click", (e) => {
         const eventId = e.target.dataset.eventId;
-        const isActive = e.target.dataset.isActive === "true"; // Verifica o status pelo atributo
+        const isActive = e.target.dataset.isActive === "true";
 
         if (isActive) {
-          // Se o evento estiver ATIVO, mostra o alerta informativo.
           Swal.fire({
             title: "Ação Necessária",
             text: "Este evento está ativo e não pode ser excluído. Você precisa desativá-lo primeiro.",
             icon: "info",
             confirmButtonText: "Entendi",
           });
+          playNotificationSound("notification");
         } else {
-          // Se o evento estiver INATIVO, mostra o alerta de confirmação de exclusão.
           Swal.fire({
             title: "Tem certeza?",
             text: "Esta ação é irreversível e excluirá o evento e todos os veículos associados!",
@@ -191,7 +193,6 @@ document.addEventListener("DOMContentLoaded", () => {
             cancelButtonText: "Cancelar",
           }).then(async (result) => {
             if (result.isConfirmed) {
-              // A lógica de exclusão que já funciona bem
               try {
                 const response = await fetch(
                   `${API_BASE_URL}/api/eventos/${eventId}`,
@@ -203,6 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await response.json();
                 if (response.ok) {
                   Swal.fire("Excluído!", data.message, "success");
+                  playNotificationSound("success");
                   if (localStorage.getItem("activeEventId") == eventId) {
                     localStorage.removeItem("activeEventId");
                     localStorage.removeItem("activeEventDetails");
@@ -214,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     data.message || "Erro ao excluir evento.",
                     "error"
                   );
+                  playNotificationSound("error");
                 }
               } catch (error) {
                 Swal.fire(
@@ -221,9 +224,11 @@ document.addEventListener("DOMContentLoaded", () => {
                   "Não foi possível conectar ao servidor.",
                   "error"
                 );
+                playNotificationSound("error");
               }
             }
           });
+          playNotificationSound("notification");
         }
       });
     });
@@ -242,6 +247,7 @@ document.addEventListener("DOMContentLoaded", () => {
             generateReport(eventId);
           }
         });
+        playNotificationSound("notification");
       });
     });
   }
@@ -268,18 +274,23 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       const data = await response.json();
       if (response.ok) {
-        Swal.fire("Sucesso!", data.message, "success");
+        showThemedSuccess({ title: "Sucesso!", text: data.message });
+        playNotificationSound("success");
         createEventForm.reset();
         loadEvents();
       } else {
-        Swal.fire("Erro!", data.message || "Erro ao criar evento.", "error");
+        showThemedError({
+          title: "Erro!",
+          text: data.message || "Erro ao criar evento.",
+        });
+        playNotificationSound("error");
       }
     } catch (error) {
-      Swal.fire(
-        "Erro de Conexão",
-        "Não foi possível conectar ao servidor.",
-        "error"
-      );
+      showThemedError({
+        title: "Erro de Conexão",
+        text: "Não foi possível conectar ao servidor.",
+      });
+      playNotificationSound("error");
     }
   });
 
@@ -398,6 +409,7 @@ document.addEventListener("DOMContentLoaded", () => {
         error.message || "Não foi possível gerar o relatório.",
         "error"
       );
+      playNotificationSound("error");
     }
   }
 

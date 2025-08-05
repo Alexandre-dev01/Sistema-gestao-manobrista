@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }).then(() => {
       window.location.href = "dashboard.html";
     });
+    playNotificationSound("error");
     return;
   }
   renderActiveEventCard(activeEventDetails, "activeEventDisplay");
@@ -29,9 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
     prepare: (str) => str.toUpperCase(),
   };
 
-  /**
-   * Cria e retorna uma nova linha (<tr>) para a tabela de veículos.
-   */
   const createRow = (vehicle = {}) => {
     const newRow = document.createElement("tr");
     const isSaved = !!vehicle.id;
@@ -99,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
               IMask(placaInput, placaMaskOptions); // Reaplicar máscara no campo de placa
             }
           });
+          playNotificationSound("notification");
         }
       });
     }
@@ -153,6 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "Não foi possível carregar os dados do evento.",
         "error"
       );
+      playNotificationSound("error");
       vehiclesTableBody.innerHTML =
         '<tr><td colspan="8">Erro ao carregar.</td></tr>';
     }
@@ -171,11 +171,6 @@ document.addEventListener("DOMContentLoaded", () => {
     rows.forEach((row) => vehiclesTableBody.appendChild(row));
   };
 
-  /**
-   * **NOVA LÓGICA**
-   * Adiciona novas linhas de forma inteligente: primeiro preenche os buracos
-   * na sequência de tickets e depois adiciona ao final.
-   */
   const addMoreRows = (countToAdd = null) => {
     const count =
       countToAdd !== null ? countToAdd : parseInt(addRowCountInput.value, 10);
@@ -204,8 +199,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       nextTicketCandidate++;
 
-      // Se já passamos por todos os candidatos até o maior número e ainda precisamos adicionar linhas,
-      // pulamos para o final da sequência.
       const maxCurrentTicket =
         currentTicketNumbers.size > 0 ? Math.max(...currentTicketNumbers) : 0;
       if (nextTicketCandidate > maxCurrentTicket + 1) {
@@ -261,6 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
         title: "Nenhum veículo para salvar",
         text: "Preencha os dados de pelo menos um veículo novo ou edite um existente.",
       });
+      playNotificationSound("error");
       return;
     }
 
@@ -289,7 +283,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const { created, updated, errors } = data.results;
 
       if (errors && errors.length > 0) {
-        // MENSAGEM DE ERRO MAIS CLARA E INTUITIVA
         const successCount = created.length + updated.length;
         const errorCount = errors.length;
         const errorHtml = errors
@@ -307,16 +300,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="swal-error-list">${errorHtml}</div>
                 `,
         });
+        playNotificationSound("error");
       } else {
         showThemedSuccess({
           title: "Sucesso!",
           text: "Todos os veículos foram registrados e atualizados!",
         });
+        playNotificationSound("success");
       }
 
       loadVehiclesAndGenerateTable();
     } catch (error) {
       showThemedError({ title: "Erro Crítico!", text: error.message });
+      playNotificationSound("error");
     }
   };
   const filterTable = () => {
@@ -434,8 +430,10 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (error) {
         console.error("Erro ao gerar PDF:", error);
         Swal.fire("Erro!", "Não foi possível gerar o PDF.", "error");
+        playNotificationSound("error");
       }
     });
+    playNotificationSound("notification");
   }
 
   const clearEmptyRows = () => {

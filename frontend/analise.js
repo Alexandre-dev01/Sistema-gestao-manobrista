@@ -72,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "Por favor, selecione pelo menos dois eventos para analisar.",
         "warning"
       );
+      playNotificationSound("notification");
       return;
     }
 

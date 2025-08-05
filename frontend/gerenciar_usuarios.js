@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }).then(() => {
       window.location.href = "dashboard.html";
     });
+    playNotificationSound("error");
     return;
   }
 
@@ -53,6 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await response.json();
         if (response.ok) {
           Toast.fire({ icon: "success", title: data.message });
+          playNotificationSound("success");
           registerForm.reset();
           validatePassword();
           loadUsers();
@@ -62,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
             title: "Erro no Cadastro",
             text: data.message,
           });
+          playNotificationSound("error");
         }
       } catch (error) {
         Swal.fire({
@@ -69,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
           title: "Erro de Conexão",
           text: "Não foi possível conectar ao servidor.",
         });
+        playNotificationSound("error");
       }
     });
   }
@@ -163,6 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }).then((isConfirmed) => {
           if (isConfirmed) deactivateUser(userId);
         });
+        playNotificationSound("notification");
       });
     });
 
@@ -178,6 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }).then((isConfirmed) => {
           if (isConfirmed) reactivateUser(userId);
         });
+        playNotificationSound("notification");
       });
     });
   }
@@ -201,9 +207,11 @@ document.addEventListener("DOMContentLoaded", () => {
         timer: 2000,
         showConfirmButton: false,
       });
+      playNotificationSound("success");
       loadUsers();
     } catch (error) {
       Swal.fire("Erro!", error.message, "error");
+      playNotificationSound("error");
     }
   }
 
@@ -225,9 +233,11 @@ document.addEventListener("DOMContentLoaded", () => {
         timer: 2000,
         showConfirmButton: false,
       });
+      playNotificationSound("success");
       loadUsers();
     } catch (error) {
       Swal.fire("Erro!", error.message, "error");
+      playNotificationSound("error");
     }
   }
 

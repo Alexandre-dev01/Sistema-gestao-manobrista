@@ -94,3 +94,26 @@ function showThemedError(options) {
     },
   });
 }
+/**
+ * Toca um arquivo de som com base no tipo de notificação.
+ * @param {'success' | 'error' | 'notification'} type
+ */
+function playNotificationSound(type) {
+  // Mapeia o tipo de notificação para o caminho do arquivo de som.
+  const soundFiles = {
+    success: "sounds/success.mp3",
+    error: "sounds/error.mp3",
+    notification: "sounds/notification.mp3",
+  };
+
+  // Verifica se o tipo de som solicitado existe no nosso mapeamento.
+  if (soundFiles[type]) {
+    const audio = new Audio(soundFiles[type]);
+    audio.play().catch((error) => {
+      console.warn(
+        "A reprodução de áudio foi bloqueada pelo navegador:",
+        error
+      );
+    });
+  }
+}

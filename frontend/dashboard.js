@@ -201,12 +201,14 @@ document.addEventListener("DOMContentLoaded", () => {
           timer: 2000,
           showConfirmButton: false,
         });
+        playNotificationSound("success");
       } catch (error) {
         Swal.fire(
           "Erro",
           "Não foi possível ativar o evento selecionado.",
           "error"
         );
+        playNotificationSound("error");
       }
     }
   }

@@ -12,11 +12,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }).then(() => {
       window.location.href = "dashboard.html";
     });
+    playNotificationSound("notification");
     return;
   }
 
-  // Renderiza o card de evento padronizado
-  // Certifique-se de que 'activeEventDetails' contém as propriedades 'hora_inicio', 'hora_fim', 'data_fim'
   renderActiveEventCard(activeEventDetails, "eventInfoDisplay"); // ID do container no HTML
 
   const searchInput = document.getElementById("searchInput");
@@ -104,6 +103,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           data.message || "Erro ao carregar veículos.",
           "error"
         );
+        playNotificationSound("error");
       }
     } catch (error) {
       Swal.fire(
@@ -111,6 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         "Não foi possível conectar ao servidor.",
         "error"
       );
+      playNotificationSound("error");
     }
   }
 
@@ -137,24 +138,26 @@ document.addEventListener("DOMContentLoaded", async () => {
               );
               const data = await response.json();
               if (response.ok) {
-                Swal.fire("Registrado!", data.message, "success");
+                showThemedSuccess({ title: "Registrado!", text: data.message });
+                playNotificationSound("success");
                 loadVehicles();
               } else {
-                Swal.fire(
-                  "Erro!",
-                  data.message || "Erro ao registrar saída.",
-                  "error"
-                );
+                showThemedError({
+                  title: "Erro!",
+                  text: data.message || "Erro ao registrar saída.",
+                });
+                playNotificationSound("error");
               }
             } catch (error) {
-              Swal.fire(
-                "Erro de Conexão!",
-                "Não foi possível conectar ao servidor.",
-                "error"
-              );
+              showThemedError({
+                title: "Erro de Conexão!",
+                text: "Não foi possível conectar ao servidor.",
+              });
+              playNotificationSound("error");
             }
           }
         });
+        playNotificationSound("notification");
       });
     });
   }
@@ -181,6 +184,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         "Não há veículos na lista atual para gerar o PDF.",
         "info"
       );
+      playNotificationSound("notification");
       return;
     }
     Swal.fire({
@@ -222,6 +226,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           Swal.close();
         } catch (e) {
           Swal.fire("Erro!", "Ocorreu um problema ao gerar o PDF.", "error");
+          playNotificationSound("error");
         }
       },
     });

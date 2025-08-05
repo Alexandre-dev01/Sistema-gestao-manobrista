@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }).then(() => {
       window.location.href = "dashboard.html";
     });
+    playNotificationSound("error");
     return;
   }
 
@@ -65,27 +66,20 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Alerta de sucesso temático
-        showThemedSuccess({
-          title: "Veículo Registrado!",
-          text: data.message,
-        });
+        showThemedSuccess({ title: "Veículo Registrado!", text: data.message });
+        playNotificationSound("success");
         entradaVeiculoForm.reset();
-        placaMask.updateValue("");
-        numeroTicketInput.focus();
+        // ...
       } else {
-        // Alerta de erro temático, exibindo a mensagem da API
-        showThemedError({
-          title: "Erro ao Registrar",
-          text: data.message || "Não foi possível registrar o veículo.",
-        });
+        showThemedError({ title: "Erro ao Registrar", text: data.message });
+        playNotificationSound("error");
       }
     } catch (error) {
-      // Alerta de erro de conexão
       showThemedError({
         title: "Erro de Conexão",
         text: "Não foi possível conectar ao servidor.",
       });
+      playNotificationSound("error");
     } finally {
       submitButton.disabled = false;
     }
