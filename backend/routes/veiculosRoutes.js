@@ -43,16 +43,29 @@ router.post(
     }
 
     try {
-      const [existingVehicle] = await pool.query(
+      // 1. Validação de ticket duplicado
+      const [existingTicket] = await pool.query(
         "SELECT id FROM veiculos WHERE evento_id = ? AND numero_ticket = ?",
         [evento_id, numero_ticket]
       );
-      if (existingVehicle.length > 0) {
+      if (existingTicket.length > 0) {
         return res
           .status(409)
           .json({ message: "Número de ticket já utilizado para este evento." });
       }
 
+      // 2. NOVA VALIDAÇÃO: Placa duplicada e estacionada
+      const [existingPlate] = await pool.query(
+        "SELECT id FROM veiculos WHERE evento_id = ? AND placa = ? AND status = 'estacionado'",
+        [evento_id, cleanedPlaca]
+      );
+      if (existingPlate.length > 0) {
+        return res.status(409).json({
+          message: `A placa ${cleanedPlaca} já está registrada e estacionada neste evento.`,
+        });
+      }
+
+      // 3. Inserção no banco de dados
       const hora_entrada = new Date();
       const [result] = await pool.query(
         "INSERT INTO veiculos (evento_id, numero_ticket, modelo, cor, placa, localizacao, hora_entrada, usuario_entrada_id, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -91,20 +104,17 @@ router.post(
 
     try {
       await connection.beginTransaction();
-
       const results = { created: [], updated: [], errors: [] };
 
-      // Processa as inserções
       if (inserts && inserts.length > 0) {
         for (const veiculo of inserts) {
-          const cleanedPlaca = String(veiculo.placa || "") // Garante que placa seja string
+          const cleanedPlaca = String(veiculo.placa || "")
             .replace(/[^a-zA-Z0-9]/g, "")
             .toUpperCase();
 
-          // Validações para cada veículo a ser inserido
           if (
             !veiculo.evento_id ||
-            !veiculo.numero_ticket || // Ticket pode ser '01', '02' etc.
+            !veiculo.numero_ticket ||
             !veiculo.modelo ||
             !veiculo.cor ||
             !cleanedPlaca ||
@@ -112,28 +122,42 @@ router.post(
           ) {
             results.errors.push({
               ticket: veiculo.numero_ticket || "N/A",
-              message: "Campos obrigatórios ausentes para inserção.",
+              message: "Campos obrigatórios ausentes.",
             });
-            continue; // Pula para o próximo veículo
+            continue;
           }
           if (cleanedPlaca.length !== 7) {
             results.errors.push({
               ticket: veiculo.numero_ticket,
-              message: "Placa deve ter exatamente 7 caracteres para inserção.",
+              message: "Placa deve ter 7 caracteres.",
             });
-            continue; // Pula para o próximo veículo
+            continue;
           }
 
-          const [existing] = await connection.query(
+          // Validação de ticket duplicado
+          const [existingTicket] = await connection.query(
             "SELECT id FROM veiculos WHERE evento_id = ? AND numero_ticket = ?",
             [veiculo.evento_id, veiculo.numero_ticket]
           );
-          if (existing.length > 0) {
+          if (existingTicket.length > 0) {
             results.errors.push({
               ticket: veiculo.numero_ticket,
-              message: "Número de ticket já utilizado para este evento.",
+              message: "Ticket já utilizado.",
             });
-            continue; // Pula para o próximo veículo
+            continue;
+          }
+
+          // NOVA VALIDAÇÃO: Placa duplicada e estacionada
+          const [existingPlate] = await connection.query(
+            "SELECT id FROM veiculos WHERE evento_id = ? AND placa = ? AND status = 'estacionado'",
+            [veiculo.evento_id, cleanedPlaca]
+          );
+          if (existingPlate.length > 0) {
+            results.errors.push({
+              ticket: veiculo.numero_ticket,
+              message: `Placa ${cleanedPlaca} já estacionada.`,
+            });
+            continue;
           }
 
           try {
@@ -146,7 +170,7 @@ router.post(
                 veiculo.cor,
                 cleanedPlaca,
                 veiculo.localizacao,
-                veiculo.observacoes || null, // Observações podem ser nulas
+                veiculo.observacoes || null,
                 new Date(),
                 usuario_id,
               ]
@@ -156,13 +180,9 @@ router.post(
               numero_ticket: veiculo.numero_ticket,
             });
           } catch (dbError) {
-            console.error(
-              `[VEICULOS MASSA] Erro ao inserir veículo ${veiculo.numero_ticket}:`,
-              dbError
-            );
             results.errors.push({
               ticket: veiculo.numero_ticket,
-              message: `Erro ao inserir: ${dbError.message}`,
+              message: `Erro no DB: ${dbError.message}`,
             });
           }
         }
@@ -231,25 +251,13 @@ router.post(
       }
 
       await connection.commit();
-
-      if (results.errors.length > 0) {
-        // Se houver erros, retorna 200 OK mas com a lista de erros
-        // Isso permite que o frontend mostre quais veículos falharam
-        return res.status(200).json({
-          message: "Operação em massa concluída com algumas falhas.",
-          results: results,
-        });
-      }
-
       res
         .status(200)
-        .json({ message: "Operação em massa concluída com sucesso!", results });
+        .json({ message: "Operação em massa concluída.", results });
     } catch (error) {
       await connection.rollback();
-      console.error("[VEICULOS] Erro na operação em massa (transação):", error);
-      res
-        .status(500)
-        .json({ message: "Erro interno do servidor ao processar os dados." });
+      console.error("[VEICULOS] Erro na operação em massa:", error);
+      res.status(500).json({ message: "Erro interno do servidor." });
     } finally {
       connection.release();
     }

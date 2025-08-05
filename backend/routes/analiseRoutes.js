@@ -11,12 +11,10 @@ router.post(
     const { eventoIds } = req.body;
 
     if (!eventoIds || !Array.isArray(eventoIds) || eventoIds.length < 2) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Pelo menos dois IDs de evento são necessários para a análise.",
-        });
+      return res.status(400).json({
+        message:
+          "Pelo menos dois IDs de evento são necessários para a análise.",
+      });
     }
 
     try {
