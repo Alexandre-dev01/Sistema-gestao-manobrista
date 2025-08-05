@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalEventList = document.getElementById("modalEventList");
   const selectEventButton = document.getElementById("selectEventButton");
 
+  // O objeto 'cards' define os elementos e suas chaves
   const cards = {
     eventos: document.getElementById("cardEventos"),
     registrarEntrada: document.getElementById("cardRegistrarEntrada"),
@@ -47,7 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (cards.registroMassa) cards.registroMassa.style.display = "block";
         if (cards.analiseConflitos)
           cards.analiseConflitos.style.display = "block";
-
         break;
       case "manobrista":
         if (cards.registrarEntrada)
@@ -94,9 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function displayActiveEvent() {
     activeEventDetails = JSON.parse(localStorage.getItem("activeEventDetails"));
-    // Chama a função centralizada para renderizar o card
     renderActiveEventCard(activeEventDetails, "activeEventDisplay");
-
     if (activeEventDetails) {
       loadStats();
     } else {
@@ -213,18 +211,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  const pageMap = {
+    eventos: "eventos.html",
+    registrarEntrada: "entrada_veiculo.html",
+    consultaVeiculos: "consulta_veiculos.html",
+    registroMassa: "registro_massa_veiculos.html",
+    analiseConflitos: "analise.html",
+    cadastrarUsuario: "gerenciar_usuarios.html",
+  };
+
   Object.keys(cards).forEach((key) => {
     if (cards[key]) {
       cards[key].addEventListener("click", () => {
-        const pageMap = {
-          eventos: "eventos.html",
-          registrarEntrada: "entrada_veiculo.html",
-          consultaVeiculos: "consulta_veiculos.html",
-          registroMassa: "registro_massa_veiculos.html",
-          analiseConflitos: "analise.html",
-          cadastrarUsuario: "cadastro_usuario.html",
-        };
-        if (pageMap[key]) window.location.href = pageMap[key];
+        if (pageMap[key]) {
+          window.location.href = pageMap[key];
+        }
       });
     }
   });

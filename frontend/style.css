@@ -9,7 +9,6 @@
   --cor-erro: #e74c3c;
   --cor-aviso: #f39c12;
 }
-
 html {
   box-sizing: border-box;
 }
@@ -1672,25 +1671,6 @@ input[type="time"]::-moz-focus-inner {
     right: 15px;
   }
 }
-:root {
-  --cor-primaria: #0f3460;
-  --cor-secundaria: #1a1a2e;
-  --cor-accent: #ff5722;
-  --cor-texto-principal: #e0e0e0;
-  --cor-texto-secundario: #b0b0b0;
-  --cor-borda-card: #2c3e50;
-  --cor-sucesso: #2ecc71;
-}
-
-body {
-  font-family: "Poppins", Arial, sans-serif;
-}
-
-main {
-  padding: 30px 20px;
-  max-width: 1100px;
-}
-
 /* --- 2. CARD DE EVENTO ATIVO (PADRONIZADO E RESPONSIVO) --- */
 .active-event-card {
   background: linear-gradient(135deg, #164a86, var(--cor-primaria));
@@ -2067,5 +2047,260 @@ textarea:focus {
   #analyzeBtn.btn-primary i {
     margin-right: 0;
     font-size: 1.2em;
+  }
+}
+.form-container {
+  margin-bottom: 40px;
+}
+.user-list-container {
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid var(--cor-borda-card);
+}
+
+/* Container para a legenda */
+.list-controls {
+  margin-bottom: 20px;
+}
+
+.role-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px 25px; /* Espaço vertical e horizontal */
+  justify-content: center;
+  padding: 10px;
+  background-color: var(--cor-secundaria);
+  border-radius: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.role-icon-legend {
+  font-size: 1.1em;
+}
+
+/* Cabeçalho da lista (visível apenas em desktop) */
+.list-header {
+  display: none; /* Escondido por padrão (mobile-first) */
+  padding: 0 15px 10px 15px;
+  font-weight: bold;
+  color: var(--cor-texto-secundario);
+  border-bottom: 2px solid var(--cor-borda-card);
+}
+
+/* Item individual da lista */
+.user-item {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 15px;
+  background-color: var(--cor-secundaria);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border: 1px solid var(--cor-borda-card);
+}
+
+/* Rótulos para mobile (ex: "Usuário:", "Cargo:") */
+.mobile-label {
+  display: block;
+  font-size: 0.8em;
+  color: var(--cor-texto-secundario);
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.user-info-col,
+.user-role-col,
+.user-actions-col {
+  width: 100%;
+}
+
+.user-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.user-role {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 0.9em;
+  color: white;
+  text-transform: capitalize;
+}
+
+.role-admin {
+  background-color: #c0392b;
+}
+.role-orientador {
+  background-color: #2980b9;
+}
+.role-manobrista {
+  background-color: #27ae60;
+}
+
+.delete-user-btn {
+  background-color: var(--cor-erro);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  font-size: 1em;
+  justify-content: center;
+}
+.delete-user-btn .btn-text {
+  display: inline;
+}
+
+.self-indicator {
+  font-style: italic;
+  color: var(--cor-texto-secundario);
+}
+
+/* --- LAYOUT PARA DESKTOP (Telas maiores que 700px) --- */
+@media screen and (min-width: 701px) {
+  .list-header,
+  .user-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+  .mobile-label {
+    display: none;
+  }
+  .user-item {
+    gap: 15px;
+    padding: 10px 15px;
+  }
+  .user-info-col {
+    flex: 2;
+  }
+  .user-role-col {
+    flex: 1;
+  }
+  .user-actions-col {
+    flex: 1;
+    text-align: right;
+  }
+
+  .delete-user-btn {
+    background-color: var(--cor-erro);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    font-size: 1em;
+    justify-content: center;
+  }
+  .delete-user-btn .btn-text {
+    display: none;
+  }
+  .delete-user-btn:hover .btn-text {
+    display: inline;
+    margin-left: 5px;
+    background-color: #c0392b;
+  }
+}
+/* --- ESTILOS PARA GERENCIAMENTO DE USUÁRIOS (ATIVOS/INATIVOS) --- */
+.view-toggle {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--cor-borda-card);
+  padding-bottom: 20px;
+}
+
+.toggle-btn {
+  flex-grow: 1;
+  padding: 10px;
+  font-size: 1em;
+  font-weight: 500;
+  color: var(--cor-texto-secundario);
+  background-color: transparent;
+  border: 2px solid var(--cor-borda-card);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.toggle-btn.active {
+  background-color: var(--cor-accent);
+  color: white;
+  border-color: var(--cor-accent);
+}
+
+.toggle-btn:not(.active):hover {
+  background-color: var(--cor-borda-card);
+  color: var(--cor-texto-principal);
+}
+
+/* Estilo para o item de usuário inativo */
+.inactive-user {
+  opacity: 0.6;
+  background-color: #1c1c2e; /* Um fundo um pouco diferente */
+}
+.inactive-user .user-name {
+  text-decoration: line-through; /* Nome riscado */
+}
+
+/* Estilos para os botões de ação */
+.action-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 1em;
+  justify-content: center;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deactivate-btn {
+  background-color: var(--cor-erro);
+}
+.deactivate-btn:hover {
+  background-color: #c0392b;
+}
+
+.reactivate-btn {
+  background-color: var(--cor-sucesso);
+}
+.reactivate-btn:hover {
+  background-color: #27ae60;
+}
+
+.no-data-message {
+  text-align: center;
+  padding: 20px;
+  color: var(--cor-texto-secundario);
+}
+
+@media screen and (min-width: 701px) {
+  .action-btn {
+    width: auto;
+    padding: 8px 12px;
+    font-size: 0.9em;
   }
 }

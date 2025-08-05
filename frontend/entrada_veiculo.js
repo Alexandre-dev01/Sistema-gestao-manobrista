@@ -7,20 +7,16 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!entradaVeiculoForm) return;
 
   if (!activeEventId || !activeEventDetails) {
-    Swal.fire({
-      icon: "warning",
+    showThemedError({
       title: "Nenhum Evento Ativo",
       text: "Por favor, selecione um evento antes de registrar um veículo.",
-      confirmButtonText: "Ir para Dashboard",
     }).then(() => {
       window.location.href = "dashboard.html";
     });
     return;
   }
 
-  // Renderiza o card de evento padronizado
-  // Certifique-se de que 'activeEventDetails' contém as propriedades 'hora_inicio', 'hora_fim', 'data_fim'
-  renderActiveEventCard(activeEventDetails, "eventInfoDisplay"); // ID do container no HTML
+  renderActiveEventCard(activeEventDetails, "eventInfoDisplay");
 
   const numeroTicketInput = document.getElementById("numeroTicket");
   const modeloCarroInput = document.getElementById("modeloCarro");
@@ -67,27 +63,26 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify(veiculo),
       });
       const data = await response.json();
+
       if (response.ok) {
-        Swal.fire({
-          icon: "success",
+        // Alerta de sucesso temático
+        showThemedSuccess({
           title: "Veículo Registrado!",
           text: data.message,
-          timer: 2000,
-          showConfirmButton: false,
         });
         entradaVeiculoForm.reset();
         placaMask.updateValue("");
         numeroTicketInput.focus();
       } else {
-        Swal.fire({
-          icon: "error",
+        // Alerta de erro temático, exibindo a mensagem da API
+        showThemedError({
           title: "Erro ao Registrar",
           text: data.message || "Não foi possível registrar o veículo.",
         });
       }
     } catch (error) {
-      Swal.fire({
-        icon: "error",
+      // Alerta de erro de conexão
+      showThemedError({
         title: "Erro de Conexão",
         text: "Não foi possível conectar ao servidor.",
       });

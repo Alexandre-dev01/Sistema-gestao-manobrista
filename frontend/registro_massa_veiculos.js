@@ -1,27 +1,19 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // --- Bloco de Verificação e Autenticação ---
   const { token, user, activeEventId, activeEventDetails } =
     verificarAutenticacao();
 
-  // --- Validação Crítica de Contexto ---
   if (!user || !activeEventId) {
     document.querySelector("main").style.display = "none";
-    Swal.fire({
-      icon: "warning",
+    showThemedError({
       title: "Nenhum Evento Ativo",
       text: "Por favor, selecione um evento no dashboard antes de continuar.",
-      allowOutsideClick: false,
-      allowEscapeKey: false,
     }).then(() => {
       window.location.href = "dashboard.html";
     });
     return;
   }
-
-  // --- Renderização do Card do Evento (usando a função modular) ---
   renderActiveEventCard(activeEventDetails, "activeEventDisplay");
 
-  // --- Seleção dos Elementos da DOM ---
   const addRowsBtn = document.getElementById("addRowsBtn");
   const addRowCountInput = document.getElementById("addRowCount");
   const vehiclesTableBody = document.getElementById("vehiclesTableBody");
@@ -112,12 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     return newRow;
   };
-
-  /**
-   * **NOVA LÓGICA**
-   * Carrega os veículos da API e gera a tabela inicial, preenchendo os buracos
-   * e adicionando novas linhas no final.
-   */
   const loadVehiclesAndGenerateTable = async () => {
     vehiclesTableBody.innerHTML =
       '<tr><td colspan="8">Carregando veículos...</td></tr>';
@@ -237,42 +223,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const inserts = [];
     const updates = [];
 
+    // Coleta os dados das linhas da tabela
     for (const row of vehiclesTableBody.querySelectorAll("tr")) {
-      // Pula linhas que já estão salvas e não estão em modo de edição
       if (
         row.classList.contains("saved-row") &&
         !row.classList.contains("editing-row")
       ) {
         continue;
       }
-
       const id = row.dataset.id;
       const ticketInput = row.querySelector(".ticket-input");
       const modeloInput = row.querySelector(".modelo-input");
-      const corInput = row.querySelector(".cor-input");
       const placaInput = row.querySelector(".placa-input");
-
-      // Pula linhas que estão efetivamente vazias
-      if (
-        !modeloInput.value.trim() &&
-        !corInput.value.trim() &&
-        !placaInput.value.trim()
-      ) {
+      if (!modeloInput.value.trim() && !placaInput.value.trim()) {
         continue;
       }
-
       const vehicleData = {
         evento_id: activeEventId,
         numero_ticket: ticketInput.value.trim(),
         modelo: modeloInput.value.trim(),
-        cor: corInput.value.trim(),
+        cor: row.querySelector(".cor-input").value.trim(),
         placa: placaInput._imask
           ? placaInput._imask.unmaskedValue.toUpperCase()
           : placaInput.value.toUpperCase(),
         localizacao: row.querySelector(".localizacao-input").value.trim(),
         observacoes: row.querySelector(".observacoes-input").value.trim(),
       };
-
       if (id && row.classList.contains("editing-row")) {
         updates.push({ id, ...vehicleData });
       } else if (!id) {
@@ -281,11 +257,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (inserts.length === 0 && updates.length === 0) {
-      Swal.fire(
-        "Nada a Salvar",
-        "Nenhum veículo novo ou editado para registrar.",
-        "info"
-      );
+      showThemedError({
+        title: "Nenhum veículo para salvar",
+        text: "Preencha os dados de pelo menos um veículo novo ou edite um existente.",
+      });
       return;
     }
 
@@ -306,24 +281,44 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ inserts, updates }),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || "Erro no servidor.");
+        throw new Error(data.message || "Erro no servidor.");
       }
 
-      Swal.fire(
-        "Sucesso!",
-        "Veículos registrados e atualizados com sucesso!",
-        "success"
-      );
-      loadVehiclesAndGenerateTable(); // Recarrega a tabela
+      const { created, updated, errors } = data.results;
+
+      if (errors && errors.length > 0) {
+        // MENSAGEM DE ERRO MAIS CLARA E INTUITIVA
+        const successCount = created.length + updated.length;
+        const errorCount = errors.length;
+        const errorHtml = errors
+          .map(
+            (err) =>
+              `<p><strong>Ticket ${err.ticket}:</strong> ${err.message}</p>`
+          )
+          .join("");
+
+        showThemedError({
+          title: `Operação Finalizada`,
+          html: `
+                    <p><strong>${successCount}</strong> veículos salvos com sucesso.</p>
+                    <p><strong>${errorCount}</strong> veículos falharam:</p>
+                    <div class="swal-error-list">${errorHtml}</div>
+                `,
+        });
+      } else {
+        showThemedSuccess({
+          title: "Sucesso!",
+          text: "Todos os veículos foram registrados e atualizados!",
+        });
+      }
+
+      loadVehiclesAndGenerateTable();
     } catch (error) {
-      Swal.fire("Erro!", error.message, "error");
+      showThemedError({ title: "Erro Crítico!", text: error.message });
     }
   };
-
-  // O restante das funções (filterTable, generateVehicleMapPdf, clearEmptyRows) permanece o mesmo.
-  // ... (código das outras funções omitido por brevidade, mas está incluído no bloco final) ...
   const filterTable = () => {
     const filterText = searchInput.value.toLowerCase();
     vehiclesTableBody.querySelectorAll("tr").forEach((row) => {
