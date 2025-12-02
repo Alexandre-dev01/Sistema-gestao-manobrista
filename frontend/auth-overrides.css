@@ -1,0 +1,110 @@
+/* auth-overrides.css
+   Colar após style.css
+*/
+
+/* --- Base: garante que o wrapper do input permita posicionamento absoluto --- */
+.form-group {
+  position: relative; /* necessário para posicionar o botão olhinho */
+}
+
+/* --- Espaço para o botão olhinho dentro do input --- */
+.form-group input[type="password"],
+.form-group input[type="text"],
+.form-group input[type="email"] {
+  padding-right: 44px; /* espaço para o botão; ajustável se necessário */
+  box-sizing: border-box;
+}
+
+/* --- Botão olhinho (padrão visual) --- */
+.toggle-password {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  line-height: 0;
+}
+
+/* evita que o botão seja submetido como form button por engano */
+.toggle-password[type="submit"] { pointer-events: none; }
+
+/* foco acessível */
+.toggle-password:focus {
+  outline: 2px solid rgba(77, 144, 254, 0.9);
+  border-radius: 4px;
+}
+
+/* estado quando a senha está visível */
+.toggle-password.visible svg {
+  stroke: #4d90fe; /* cor do ícone quando ativo */
+}
+
+/* garante que o ícone SVG não aumente o tamanho da linha */
+.toggle-password svg { width: 20px; height: 20px; }
+
+/* --- Evita sobreposição do olhinho com o botão de submit --- */
+.btn-primary,
+#registerButton {
+  position: relative;
+  z-index: 3;
+}
+
+/* se o layout empurrar o botão para fora, adiciona espaçamento inferior */
+.form-container { padding-bottom: 12px; }
+
+/* --- Anula efeitos indesejados de autofill e foco do navegador --- */
+:root { --input-bg-login: transparent; } /* se quiser, substitua pela cor do seu input */
+
+#registerForm input,
+#registerForm input:focus,
+#registerForm input:-webkit-autofill,
+#registerForm input:-moz-autofill {
+  background-image: none !important;
+  -webkit-text-fill-color: inherit !important;
+  color: inherit !important;
+}
+
+/* Força cor de fundo consistente para inputs (se seu tema usar cor específica, ajuste aqui) */
+#registerForm input,
+#registerForm input:focus {
+  background-color: transparent !important;
+}
+
+/* Chrome/Safari autofill neutralizado (remove overlay amarelo/branco) */
+#registerForm input:-webkit-autofill,
+#registerForm input:-webkit-autofill:focus,
+#registerForm input:-webkit-autofill:hover,
+#registerForm input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  box-shadow: 0 0 0px 1000px transparent inset !important;
+  -webkit-text-fill-color: inherit !important;
+  background-image: none !important;
+}
+
+/* Firefox autofill neutralizado */s
+#registerForm input:-moz-autofill {
+  box-shadow: 0 0 0px 1000px transparent inset !important;
+  -moz-text-fill-color: inherit !important;
+}
+
+/* --- Pequenos ajustes responsivos --- */
+@media (max-width: 480px) {
+  .toggle-password { right: 6px; padding: 4px; }
+  .form-group input[type="password"] { padding-right: 40px; }
+}
+
+/* --- Estética opcional: hover do olhinho --- */
+.toggle-password:hover { opacity: 0.9; }
+
+/* --- Se quiser um olhinho riscado quando oculto (alternativa visual) ---
+   Você pode alternar a classe .visible no botão via JS para trocar o SVG
+   ou usar filtros CSS para indicar estado. Mantive apenas a mudança de stroke.
+*/

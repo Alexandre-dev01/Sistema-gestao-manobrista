@@ -15,7 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalEventList = document.getElementById("modalEventList");
   const selectEventButton = document.getElementById("selectEventButton");
 
-  // O objeto 'cards' define os elementos e suas chaves
   const cards = {
     eventos: document.getElementById("cardEventos"),
     registrarEntrada: document.getElementById("cardRegistrarEntrada"),
@@ -48,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (cards.registroMassa) cards.registroMassa.style.display = "block";
         if (cards.analiseConflitos)
           cards.analiseConflitos.style.display = "block";
+
         break;
       case "manobrista":
         if (cards.registrarEntrada)
@@ -94,7 +94,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function displayActiveEvent() {
     activeEventDetails = JSON.parse(localStorage.getItem("activeEventDetails"));
+    // Chama a função centralizada para renderizar o card
     renderActiveEventCard(activeEventDetails, "activeEventDisplay");
+
     if (activeEventDetails) {
       loadStats();
     } else {
@@ -201,33 +203,28 @@ document.addEventListener("DOMContentLoaded", () => {
           timer: 2000,
           showConfirmButton: false,
         });
-        playNotificationSound("success");
       } catch (error) {
         Swal.fire(
           "Erro",
           "Não foi possível ativar o evento selecionado.",
           "error"
         );
-        playNotificationSound("error");
       }
     }
   }
 
-  const pageMap = {
-    eventos: "eventos.html",
-    registrarEntrada: "entrada_veiculo.html",
-    consultaVeiculos: "consulta_veiculos.html",
-    registroMassa: "registro_massa_veiculos.html",
-    analiseConflitos: "analise.html",
-    cadastrarUsuario: "gerenciar_usuarios.html",
-  };
-
   Object.keys(cards).forEach((key) => {
     if (cards[key]) {
       cards[key].addEventListener("click", () => {
-        if (pageMap[key]) {
-          window.location.href = pageMap[key];
-        }
+        const pageMap = {
+          eventos: "eventos.html",
+          registrarEntrada: "entrada_veiculo.html",
+          consultaVeiculos: "consulta_veiculos.html",
+          registroMassa: "registro_massa_veiculos.html",
+          analiseConflitos: "analise.html",
+          cadastrarUsuario: "gerenciar_usuarios.html",
+        };
+        if (pageMap[key]) window.location.href = pageMap[key];
       });
     }
   });

@@ -97,7 +97,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".set-active-btn").forEach((button) => {
       button.addEventListener("click", async (e) => {
         const eventId = e.target.dataset.eventId;
-        const eventDetails = JSON.parse(e.target.dataset.eventDetails);
+        
+        // Pegamos os detalhes que já estão no botão para facilitar
+        // Mas o ideal é pegar a resposta atualizada da API (vamos fazer isso abaixo)
+        
         try {
           const response = await fetch(
             `${API_BASE_URL}/api/eventos/${eventId}/ativar`,
@@ -106,14 +109,25 @@ document.addEventListener("DOMContentLoaded", () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
-          if (!response.ok) throw new Error("Falha ao ativar o evento.");
-          // ...
+          
+          const data = await response.json(); // Lemos a resposta da API
+
+          if (!response.ok) throw new Error(data.message || "Falha ao ativar o evento.");
+          
+          if (data.event) {
+             localStorage.setItem("activeEventId", data.event.id);
+             localStorage.setItem("activeEventDetails", JSON.stringify(data.event));
+          }
+          // ------------------------------------------
+
           showThemedSuccess({
             title: "Evento Ativado!",
-            text: `O evento "${eventDetails.nome_evento}" agora está ativo.`,
+            text: `O evento agora está ativo.`,
           });
           playNotificationSound("success");
-          loadEvents();
+          
+          loadEvents(); // Recarrega a lista para atualizar os botões
+          
         } catch (error) {
           showThemedError({ title: "Erro!", text: error.message });
           playNotificationSound("error");
